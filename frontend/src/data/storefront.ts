@@ -1,0 +1,102 @@
+import type { NavigationItem, Product } from "@/types/catalog";
+
+export const navigation: NavigationItem[] = [
+  { label: "Novidades", href: "#novidades", featured: true },
+  { label: "Camisetas", href: "#camisetas" },
+  { label: "Coleções", href: "#colecoes" },
+  { label: "Shows & festivais", href: "#festivais" },
+  { label: "Manifesto", href: "#manifesto" },
+];
+
+export const products: Product[] = [
+  {
+    id: "ur-nocturne-01",
+    name: "Nocturne Wings Oversized",
+    collection: "Nocturne Series",
+    price: { amount: 129.9, currencyCode: "BRL" },
+    image: "/images/product-raven.png",
+    imageAlt: "Camiseta preta oversized com arte original de asas prateadas",
+    variants: ["P", "M", "G", "GG"].map((size) => ({ id: `ur-nocturne-01-${size.toLowerCase()}`, size, availability: "unknown" })),
+    availability: "unknown",
+    label: "DROP CONCEITO",
+    tone: "black",
+    dataStatus: "demo",
+  },
+  {
+    id: "ur-eclipse-02",
+    name: "Eclipse Serpent Heavy Tee",
+    collection: "Ritual Collection",
+    price: { amount: 139.9, currencyCode: "BRL" },
+    compareAtPrice: { amount: 159.9, currencyCode: "BRL" },
+    image: "/images/product-serpent.png",
+    imageAlt: "Camiseta grafite oversized com arte original de serpente e eclipse",
+    variants: ["P", "M", "G", "GG", "XG"].map((size) => ({ id: `ur-eclipse-02-${size.toLowerCase()}`, size, availability: "unknown" })),
+    availability: "unknown",
+    label: "PREÇO EXEMPLO",
+    tone: "graphite",
+    dataStatus: "demo",
+  },
+  {
+    id: "ur-static-03",
+    name: "Static Star Essential",
+    collection: "Noise Division",
+    price: { amount: 119.9, currencyCode: "BRL" },
+    image: "/images/product-static.png",
+    imageAlt: "Camiseta clara oversized com arte original geométrica e onda sonora",
+    variants: ["P", "M", "G", "GG"].map((size) => ({ id: `ur-static-03-${size.toLowerCase()}`, size, availability: "unknown" })),
+    availability: "unknown",
+    label: "CAPSULE CONCEITO",
+    tone: "bone",
+    dataStatus: "demo",
+  },
+  {
+    id: "ur-iron-bloom-04",
+    name: "Iron Bloom Heavy Tee",
+    collection: "Ritual Collection",
+    price: { amount: 149.9, currencyCode: "BRL" },
+    image: "/images/products/iron-bloom.png",
+    imageAlt: "Camiseta preta oversized com arte original abstrata em cobre",
+    variants: ["P", "M", "G", "GG"].map((size) => ({ id: `ur-iron-bloom-04-${size.toLowerCase()}`, size, availability: "unknown" })),
+    availability: "unknown",
+    label: "CAPSULE CONCEITO",
+    tone: "black",
+    dataStatus: "demo",
+  },
+  {
+    id: "ur-moon-static-05",
+    name: "Moon Static Washed Tee",
+    collection: "Noise Division",
+    price: { amount: 129.9, currencyCode: "BRL" },
+    compareAtPrice: { amount: 149.9, currencyCode: "BRL" },
+    image: "/images/products/moon-static.png",
+    imageAlt: "Camiseta carvão lavada com lua crescente e onda sonora originais",
+    variants: ["P", "M", "G", "GG", "XG"].map((size) => ({ id: `ur-moon-static-05-${size.toLowerCase()}`, size, availability: "unknown" })),
+    availability: "unknown",
+    label: "PREÇO EXEMPLO",
+    tone: "graphite",
+    dataStatus: "demo",
+  },
+  {
+    id: "ur-black-signal-06",
+    name: "Black Signal Essential",
+    collection: "Nocturne Series",
+    price: { amount: 119.9, currencyCode: "BRL" },
+    image: "/images/products/black-signal.png",
+    imageAlt: "Camiseta preta com estampa geométrica original em prata envelhecida",
+    variants: ["P", "M", "G", "GG"].map((size) => ({ id: `ur-black-signal-06-${size.toLowerCase()}`, size, availability: "unknown" })),
+    availability: "unknown",
+    label: "DROP CONCEITO",
+    tone: "bone",
+    dataStatus: "demo",
+  },
+];
+
+export const genres = [
+  { name: "Heavy metal", note: "Peso, contraste e presença", code: "HM / 01", image: "/images/genres/heavy-metal.png", imageAlt: "Editorial de moda alternativo em preto e cobre", style: "copper" },
+  { name: "Classic rock", note: "Textura analógica e atitude", code: "CR / 02", image: "/images/genres/classic-rock.png", imageAlt: "Editorial original com guitarra sem marca em sala de ensaio", style: "amber" },
+  { name: "Grunge", note: "Camadas, ruído e expressão", code: "GR / 03", image: "/images/genres/grunge.png", imageAlt: "Editorial urbano com camisa xadrez e camiseta escura", style: "silver" },
+  { name: "Alternative", note: "Novas cenas, novas formas", code: "AL / 04", image: "/images/genres/alternative.png", imageAlt: "Editorial contemporâneo em corredor de arquitetura minimalista", style: "bone" },
+];
+
+export const newArrivals = products.slice(0, 3);
+export const exclusiveCollection = products.slice(3, 6);

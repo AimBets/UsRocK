@@ -1,0 +1,7 @@
+# Next.js and TypeScript generated output
+.next/
+*.tsbuildinfo
+
+# Local environment files
+.env*
+!.env.example
