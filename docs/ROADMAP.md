@@ -4,11 +4,11 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 
 ## Fase 0 — Base e colaboração
 - [ ] Repositório clonado, regras versionadas, ferramentas autenticadas.
-- [ ] Stack acordada, primeiro frontend e backend executados localmente.
+- [~] Base frontend Next.js/React/TypeScript/Tailwind 4 executável localmente; compatibilidade da stack total e hospedagem aguardam alinhamento com Claude.
 - [ ] Contratos iniciais aprovados e pipeline de testes básico.
 
 ## Fase 1 — Loja e design
-- [ ] Home premium responsiva.
+- [~] Homepage responsiva implementada e validada por lint, TypeScript, build e resposta HTTP local; inspeção visual em navegador e aprovação final pendentes.
 - [ ] Busca, catálogo, filtros, coleções e páginas de produto.
 - [ ] Variações/tamanhos, carrinho e checkout (fluxo de testes).
 
@@ -31,3 +31,7 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 ## Fase 5 — Produção
 - [ ] Acessibilidade, segurança, desempenho, privacidade e testes.
 - [ ] Backup, observabilidade, recuperação e deploy.
+
+## Registro da Fase 1 — fundação do frontend
+- Inclui catálogo demonstrativo tipado, hero e imagens originais, vitrine, gêneros, campanha conceito, manifesto, footer, navegação responsiva e busca/formulário/carrinho/favoritos em estado local.
+- Integrações de loja, autenticação, dados comerciais e publicação ainda não existem; ver `docs/HANDOFF_CODEX.md` e `docs/API_CONTRACTS.md`.
