@@ -1,0 +1,32 @@
+# Secrets and personal data
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account.json
+
+# JS/TS
+node_modules/
+.next/
+.nuxt/
+dist/
+build/
+coverage/
+.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# General
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*.log
