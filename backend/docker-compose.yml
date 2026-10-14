@@ -1,0 +1,32 @@
+# Local development infrastructure only. Never reuse these credentials outside a developer machine.
+name: usrock
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: usrock
+      POSTGRES_PASSWORD: usrock_dev_only
+      POSTGRES_DB: usrock
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usrock -d usrock"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Captures outgoing email locally (SMTP 1025, web UI 8025). No email is sent by the API yet.
+  mailpit:
+    image: axllent/mailpit:v1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+
+volumes:
+  postgres-data:
