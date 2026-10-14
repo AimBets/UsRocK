@@ -17,7 +17,20 @@ describe("OpenAPI", () => {
       components: { schemas: Record<string, unknown> };
     };
     expect(document.openapi).toBe("3.1.0");
-    expect(Object.keys(document.paths)).toEqual(expect.arrayContaining(["/api/v1/health", "/api/v1/health/live"]));
+    expect(Object.keys(document.paths)).toEqual(
+      expect.arrayContaining([
+        "/api/v1/health",
+        "/api/v1/health/live",
+        "/api/v1/products",
+        "/api/v1/products/{slug}",
+        "/api/v1/collections",
+        "/api/v1/collections/{slug}",
+        "/api/v1/categories",
+      ]),
+    );
+    for (const schema of ["ProductSummary", "ProductDetail", "ProductVariant", "Money", "PageInfo", "Collection", "Category"]) {
+      expect(document.components.schemas).toHaveProperty(schema);
+    }
     expect(Object.keys(document.paths["/api/v1/health"]?.get.responses ?? {})).toEqual(
       expect.arrayContaining(["200", "429", "500", "503"]),
     );

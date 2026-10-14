@@ -1,8 +1,7 @@
 import { afterAll, describe, expect, inject, it } from "vitest";
-import { buildApp } from "../src/app.js";
 import { createDatabase } from "../src/db/client.js";
 import { runMigrations } from "../src/db/migrate.js";
-import { captureLogs, testEnv } from "./helpers/app.js";
+import { buildTestApp } from "./helpers/app.js";
 
 const url = inject("testDatabaseUrl");
 const database = createDatabase(url, { poolMax: 2 });
@@ -30,11 +29,7 @@ describe("migrations", () => {
 
 describe("health against a real PostgreSQL", () => {
   it("reports the database as up", async () => {
-    const app = await buildApp({
-      env: testEnv(),
-      logStream: captureLogs().stream,
-      healthChecks: [{ name: "database", check: () => database.ping() }],
-    });
+    const { app } = await buildTestApp({ database });
     try {
       const res = await app.inject({ method: "GET", url: "/api/v1/health" });
       expect(res.statusCode).toBe(200);
@@ -46,12 +41,7 @@ describe("health against a real PostgreSQL", () => {
 
   it("reports 503 when the database is unreachable", async () => {
     const unreachable = createDatabase("postgres://usrock:wrong@127.0.0.1:1/usrock_test", { poolMax: 1 });
-    const logs = captureLogs();
-    const app = await buildApp({
-      env: testEnv(),
-      logStream: logs.stream,
-      healthChecks: [{ name: "database", check: () => unreachable.ping() }],
-    });
+    const { app } = await buildTestApp({ database: unreachable });
     try {
       const res = await app.inject({ method: "GET", url: "/api/v1/health" });
       expect(res.statusCode).toBe(503);

@@ -28,7 +28,10 @@ export const openApiPlugin = fp<OpenApiOptions>(
             "Erros seguem o schema `ErrorResponse`; listas seguem `{ data, pageInfo }`; valores monetários usam `Money` em centavos.",
         },
         servers: [{ url: "/", description: "Mesmo host (o Next.js encaminha /api/* para o backend)." }],
-        tags: [{ name: "system", description: "Saúde e metadados do serviço" }],
+        tags: [
+          { name: "system", description: "Saúde e metadados do serviço" },
+          { name: "catalog", description: "Catálogo público: produtos, coleções e categorias" },
+        ],
         components: {
           securitySchemes: {
             sessionCookie: {

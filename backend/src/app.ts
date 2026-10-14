@@ -4,8 +4,10 @@ import Fastify, { LogController } from "fastify";
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from "fastify-type-provider-zod";
 import type { Env } from "./config/env.js";
 import { buildLoggerOptions, type LogDestination } from "./config/logger.js";
+import type { Database } from "./db/client.js";
 import { authPlugin } from "./modules/auth/auth.plugin.js";
 import { anonymousSessionResolver, type SessionResolver } from "./modules/auth/auth.types.js";
+import { catalogRoutes } from "./modules/catalog/catalog.routes.js";
 import { healthRoutes, type HealthCheck } from "./modules/health/health.routes.js";
 import { errorHandlerPlugin } from "./plugins/error-handler.js";
 import { openApiPlugin } from "./plugins/openapi.js";
@@ -20,7 +22,9 @@ const incomingRequestId = /^[A-Za-z0-9._:-]{8,128}$/;
 
 export interface AppDependencies {
   env: Env;
-  /** Dependency probes exposed by GET /api/v1/health (e.g. the database ping). */
+  /** Connection pool; opened lazily on first query. The caller owns its lifecycle. */
+  database: Database;
+  /** Dependency probes for GET /api/v1/health. Default: database ping. */
   healthChecks?: HealthCheck[];
   sessionResolver?: SessionResolver;
   /** Overrides the log destination (tests capture log lines through it). */
@@ -36,7 +40,8 @@ function generateRequestId(request: IncomingMessage): string {
   return typeof header === "string" && incomingRequestId.test(header) ? header : randomUUID();
 }
 
-export async function buildApp({ env, healthChecks = [], sessionResolver = anonymousSessionResolver, logStream }: AppDependencies) {
+export async function buildApp({ env, database, healthChecks, sessionResolver = anonymousSessionResolver, logStream }: AppDependencies) {
+  const checks = healthChecks ?? [{ name: "database", check: () => database.ping() }];
   const app = Fastify({
     logger: buildLoggerOptions(env, logStream),
     genReqId: generateRequestId,
@@ -75,8 +80,9 @@ export async function buildApp({ env, healthChecks = [], sessionResolver = anony
 
   await app.register(
     async (api) => {
-      await api.register(healthRoutes, { checks: healthChecks, version: env.APP_VERSION });
-      // Business modules (catalog, cart, orders, ...) are registered here in later phases.
+      await api.register(healthRoutes, { checks, version: env.APP_VERSION });
+      await api.register(catalogRoutes, { db: database.db });
+      // Further modules (accounts, cart, orders, ...) are registered here in later phases.
     },
     { prefix: API_PREFIX },
   );

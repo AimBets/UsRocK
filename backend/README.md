@@ -1,7 +1,7 @@
 # UsRock — backend
 
 API da UsRock: Node.js 24 + TypeScript, Fastify 5, PostgreSQL 17 + Drizzle ORM, Zod 4 e OpenAPI 3.1.
-Estado: **fundação (E1)**. Nenhum módulo comercial (catálogo, carrinho, pedidos, pagamentos) existe ainda.
+Estado: **E1 (fundação) + E2 (catálogo público, somente leitura)**. Carrinho, contas, pedidos e pagamentos ainda não existem.
 
 ## Rodando localmente
 
@@ -13,6 +13,7 @@ npm install
 cp .env.example .env          # valores locais; nunca commitar .env
 npm run db:up                 # PostgreSQL (127.0.0.1:5433) + Mailpit (UI em http://127.0.0.1:8025)
 npm run db:migrate
+npm run db:seed               # catálogo DEMONSTRATIVO (6 produtos do mock da home)
 npm run dev                   # http://127.0.0.1:3333 — docs em http://127.0.0.1:3333/docs
 ```
 
@@ -30,6 +31,7 @@ No PowerShell, se a política bloquear `npm.ps1`, use `npm.cmd`.
 | `db:up` / `db:down` | Sobe/para a infraestrutura local via Docker Compose |
 | `db:generate` | Gera migração a partir do schema Drizzle (`--custom` para SQL manual) |
 | `db:migrate` | Aplica migrações pendentes em `DATABASE_URL` |
+| `db:seed` | Insere/atualiza o catálogo demonstrativo (`is_demo`); recusado em produção; nunca sobrescreve produto real nem estoque existente |
 | `openapi:generate` / `openapi:check` | Gera `openapi/openapi.json` / falha se estiver desatualizado (usado no CI) |
 
 ## Estrutura
@@ -45,6 +47,8 @@ src/
   modules/
     auth/                papéis, permissões, guards, interface SessionResolver (contas: E3)
     health/              GET /api/v1/health e /health/live
+    catalog/             schema (tabelas), contracts (Zod/OpenAPI), repository (SQL), mappers, routes
+  db/seed.ts             seed demonstrativo (dados em db/seed-data/)
 drizzle/                 migrações SQL versionadas
 openapi/openapi.json     contrato gerado — referência para o frontend
 test/                    *.test.ts (unitários) e *.int.test.ts (integração)

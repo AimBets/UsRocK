@@ -24,10 +24,7 @@ const database = createDatabase(env.DATABASE_URL, {
   onPoolError: (error) => app.log.error({ err: error }, "idle database client error"),
 });
 
-const app = await buildApp({
-  env,
-  healthChecks: [{ name: "database", check: () => database.ping() }],
-});
+const app = await buildApp({ env, database });
 
 app.addHook("onClose", async () => {
   await database.close();

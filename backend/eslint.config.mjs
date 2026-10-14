@@ -27,7 +27,7 @@ export default tseslint.config(
     ...tseslint.configs.disableTypeChecked,
   },
   {
-    files: ["scripts/**/*.ts", "src/db/migrate.ts"],
+    files: ["scripts/**/*.ts", "src/db/migrate.ts", "src/db/seed.ts"],
     rules: { "no-console": "off" },
   },
 );

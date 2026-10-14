@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildApp } from "../src/app.js";
 import { loadEnv } from "../src/config/env.js";
+import { createDatabase } from "../src/db/client.js";
 
 const outputFile = join(dirname(fileURLToPath(import.meta.url)), "..", "openapi", "openapi.json");
 const checkOnly = process.argv.includes("--check");
@@ -17,10 +18,12 @@ const env = loadEnv({
   API_DOCS_ENABLED: "false",
 });
 
-const app = await buildApp({ env });
+const database = createDatabase(env.DATABASE_URL);
+const app = await buildApp({ env, database });
 await app.ready();
 const document = `${JSON.stringify(app.swagger(), null, 2)}\n`;
 await app.close();
+await database.close();
 
 if (checkOnly) {
   let current = "";

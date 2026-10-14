@@ -19,6 +19,7 @@
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
+    "db:seed": "tsx src/db/seed.ts",
     "openapi:generate": "tsx scripts/generate-openapi.ts",
     "openapi:check": "tsx scripts/generate-openapi.ts --check"
   },
