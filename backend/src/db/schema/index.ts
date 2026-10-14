@@ -8,3 +8,4 @@
 // - `created_at` / `updated_at` as timestamptz;
 // - versioned JSON documents (landing pages) stored as immutable jsonb rows.
 export * from "../../modules/catalog/catalog.schema.js";
+export * from "../../modules/accounts/accounts.schema.js";

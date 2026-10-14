@@ -27,9 +27,36 @@ export const envSchema = z
     RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).default(60_000),
     API_DOCS_ENABLED: booleanString.optional(),
+    /** Public storefront origin, used to build links in emails (e.g. password reset). */
+    APP_PUBLIC_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:3000").transform((url) => new URL(url).origin),
+    SESSION_COOKIE_SECURE: booleanString.optional(),
+    SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+    SESSION_IDLE_DAYS: z.coerce.number().int().min(1).max(90).default(14),
+    /** Requests per 15 minutes per IP on sensitive auth routes (login, register, password reset). */
+    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
+    /** Version identifier of the terms/privacy texts the user accepts at sign-up. */
+    LEGAL_POLICY_VERSION: z.string().min(1).max(64).default("rascunho-2026-10"),
+    SMTP_HOST: z.string().min(1).default("127.0.0.1"),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(1025),
+    SMTP_SECURE: booleanString.default(false),
+    SMTP_USER: z.string().min(1).optional(),
+    SMTP_PASSWORD: z.string().min(1).optional(),
+    MAIL_FROM: z.string().min(3).max(200).default("UsRock <nao-responda@usrock.local>"),
   })
   .superRefine((env, ctx) => {
+    if ((env.SMTP_USER === undefined) !== (env.SMTP_PASSWORD === undefined)) {
+      ctx.addIssue({ code: "custom", path: ["SMTP_PASSWORD"], message: "SMTP_USER e SMTP_PASSWORD devem ser definidos juntos" });
+    }
+    if (env.SESSION_IDLE_DAYS > env.SESSION_TTL_DAYS) {
+      ctx.addIssue({ code: "custom", path: ["SESSION_IDLE_DAYS"], message: "não pode exceder SESSION_TTL_DAYS" });
+    }
     if (env.NODE_ENV !== "production") return;
+    if (!env.APP_PUBLIC_URL.startsWith("https://")) {
+      ctx.addIssue({ code: "custom", path: ["APP_PUBLIC_URL"], message: "em produção, deve usar https" });
+    }
+    if (env.SESSION_COOKIE_SECURE === false) {
+      ctx.addIssue({ code: "custom", path: ["SESSION_COOKIE_SECURE"], message: "não pode ser false em produção" });
+    }
     for (const origin of env.CORS_ORIGINS) {
       if (!origin.startsWith("https://")) {
         ctx.addIssue({ code: "custom", path: ["CORS_ORIGINS"], message: "em produção, apenas origens https são aceitas" });
@@ -39,9 +66,10 @@ export const envSchema = z
       ctx.addIssue({ code: "custom", path: ["LOG_LEVEL"], message: "debug/trace não são permitidos em produção" });
     }
   })
-  .transform(({ API_DOCS_ENABLED, ...env }) => ({
+  .transform(({ API_DOCS_ENABLED, SESSION_COOKIE_SECURE, ...env }) => ({
     ...env,
     API_DOCS_ENABLED: API_DOCS_ENABLED ?? env.NODE_ENV !== "production",
+    SESSION_COOKIE_SECURE: SESSION_COOKIE_SECURE ?? env.NODE_ENV === "production",
   }));
 
 export type Env = z.infer<typeof envSchema>;

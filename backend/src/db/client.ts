@@ -3,6 +3,9 @@ import pg from "pg";
 import * as schema from "./schema/index.js";
 
 export type Db = NodePgDatabase<typeof schema>;
+export type DbTransaction = Parameters<Parameters<Db["transaction"]>[0]>[0];
+/** Either the pool-backed client or an open transaction. */
+export type DbExecutor = Db | DbTransaction;
 
 export interface Database {
   db: Db;

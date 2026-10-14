@@ -26,9 +26,16 @@ describe("OpenAPI", () => {
         "/api/v1/collections",
         "/api/v1/collections/{slug}",
         "/api/v1/categories",
+        "/api/v1/auth/register",
+        "/api/v1/auth/login",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/password/forgot",
+        "/api/v1/auth/password/reset",
+        "/api/v1/me",
+        "/api/v1/me/password",
       ]),
     );
-    for (const schema of ["ProductSummary", "ProductDetail", "ProductVariant", "Money", "PageInfo", "Collection", "Category"]) {
+    for (const schema of ["ProductSummary", "ProductDetail", "ProductVariant", "Money", "PageInfo", "Collection", "Category", "CurrentUser"]) {
       expect(document.components.schemas).toHaveProperty(schema);
     }
     expect(Object.keys(document.paths["/api/v1/health"]?.get.responses ?? {})).toEqual(

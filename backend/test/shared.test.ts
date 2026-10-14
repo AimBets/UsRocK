@@ -60,3 +60,19 @@ describe("money", () => {
     expect(() => multiplyMoney(brl(100), 1.5)).toThrow(RangeError);
   });
 });
+
+describe("window limiter", () => {
+  it("counts per key within a fixed window and evicts to bound memory", async () => {
+    const { createWindowLimiter } = await import("../src/shared/window-limiter.js");
+    let clock = 0;
+    const limiter = createWindowLimiter({ max: 2, windowMs: 1000, maxKeys: 3, now: () => clock });
+    expect(limiter.hit("a").allowed).toBe(true);
+    expect(limiter.hit("a").allowed).toBe(true);
+    expect(limiter.hit("a")).toEqual({ allowed: false, retryAfterSeconds: 1 });
+    expect(limiter.hit("b").allowed).toBe(true);
+    clock = 1000;
+    expect(limiter.hit("a").allowed).toBe(true);
+    for (const key of ["c", "d", "e", "f"]) limiter.hit(key);
+    expect(limiter.size()).toBeLessThanOrEqual(3);
+  });
+});

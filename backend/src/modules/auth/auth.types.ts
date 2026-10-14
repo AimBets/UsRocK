@@ -43,14 +43,9 @@ export interface Principal {
 }
 
 /**
- * Resolves the session cookie into a Principal. The accounts module (E3) will provide the
- * real implementation backed by hashed session tokens in PostgreSQL.
+ * Resolves the session cookie into a Principal. The accounts module provides the implementation
+ * backed by hashed session tokens in PostgreSQL (see accounts/sessions.ts).
  */
 export interface SessionResolver {
   resolve(request: FastifyRequest): Promise<Principal | null>;
 }
-
-/** E1 placeholder: no accounts exist yet, so every request is anonymous. */
-export const anonymousSessionResolver: SessionResolver = {
-  resolve: () => Promise.resolve(null),
-};

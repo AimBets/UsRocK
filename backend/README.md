@@ -1,7 +1,7 @@
 # UsRock — backend
 
 API da UsRock: Node.js 24 + TypeScript, Fastify 5, PostgreSQL 17 + Drizzle ORM, Zod 4 e OpenAPI 3.1.
-Estado: **E1 (fundação) + E2 (catálogo público, somente leitura)**. Carrinho, contas, pedidos e pagamentos ainda não existem.
+Estado: **E1 (fundação) + E2 (catálogo público) + E3 (contas, sessão, permissões)**. Carrinho, pedidos e pagamentos ainda não existem.
 
 ## Rodando localmente
 
@@ -32,6 +32,7 @@ No PowerShell, se a política bloquear `npm.ps1`, use `npm.cmd`.
 | `db:generate` | Gera migração a partir do schema Drizzle (`--custom` para SQL manual) |
 | `db:migrate` | Aplica migrações pendentes em `DATABASE_URL` |
 | `db:seed` | Insere/atualiza o catálogo demonstrativo (`is_demo`); recusado em produção; nunca sobrescreve produto real nem estoque existente |
+| `user:create-admin` | Cria o primeiro admin ou promove conta existente: `npm run user:create-admin -- --email x@y --name "Nome"`; senha em `ADMIN_PASSWORD` (obrigatória em produção) |
 | `openapi:generate` / `openapi:check` | Gera `openapi/openapi.json` / falha se estiver desatualizado (usado no CI) |
 
 ## Estrutura
@@ -45,10 +46,13 @@ src/
   plugins/               error-handler, security (helmet/CORS/rate limit/Origin), openapi
   shared/                errors (envelope de erro), pagination (cursor), money (centavos)
   modules/
-    auth/                papéis, permissões, guards, interface SessionResolver (contas: E3)
+    auth/                papéis, permissões, guards, interface SessionResolver
+    accounts/            usuários, sessões por cookie, senha (Argon2id), recuperação, consentimentos
+    mail/                envio SMTP (Mailpit em dev) e templates
     health/              GET /api/v1/health e /health/live
     catalog/             schema (tabelas), contracts (Zod/OpenAPI), repository (SQL), mappers, routes
   db/seed.ts             seed demonstrativo (dados em db/seed-data/)
+  cli/create-admin.ts    criação do primeiro administrador
 drizzle/                 migrações SQL versionadas
 openapi/openapi.json     contrato gerado — referência para o frontend
 test/                    *.test.ts (unitários) e *.int.test.ts (integração)

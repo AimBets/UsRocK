@@ -31,6 +31,7 @@ export const openApiPlugin = fp<OpenApiOptions>(
         tags: [
           { name: "system", description: "Saúde e metadados do serviço" },
           { name: "catalog", description: "Catálogo público: produtos, coleções e categorias" },
+          { name: "accounts", description: "Cadastro, sessão, senha e usuário atual" },
         ],
         components: {
           securitySchemes: {
@@ -38,7 +39,7 @@ export const openApiPlugin = fp<OpenApiOptions>(
               type: "apiKey",
               in: "cookie",
               name: SESSION_COOKIE_NAME,
-              description: "Sessão opaca httpOnly. Emitida pelo módulo de contas (E3); ainda não disponível.",
+              description: "Sessão opaca httpOnly emitida por /auth/login e /auth/register.",
             },
           },
         },

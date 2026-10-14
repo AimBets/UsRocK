@@ -15,6 +15,13 @@
       "when": 1791937344553,
       "tag": "0001_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791937955737,
+      "tag": "0002_accounts",
+      "breakpoints": true
     }
   ]
 }

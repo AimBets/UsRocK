@@ -27,7 +27,7 @@ async function setup(sessionResolver?: SessionResolver) {
 }
 
 describe("authorization guards", () => {
-  it("treats every request as anonymous until the accounts module exists", async () => {
+  it("treats requests without a session cookie as anonymous", async () => {
     await setup();
     const res = await app.inject({ method: "GET", url: "/api/v1/probe/me", headers: { "x-test-roles": "admin" } });
     expect(res.statusCode).toBe(401);

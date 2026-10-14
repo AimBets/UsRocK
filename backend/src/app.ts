@@ -1,14 +1,18 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
+import cookie from "@fastify/cookie";
 import Fastify, { LogController } from "fastify";
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from "fastify-type-provider-zod";
 import type { Env } from "./config/env.js";
 import { buildLoggerOptions, type LogDestination } from "./config/logger.js";
 import type { Database } from "./db/client.js";
+import { accountsRoutes } from "./modules/accounts/accounts.routes.js";
+import { createDbSessionResolver } from "./modules/accounts/sessions.js";
 import { authPlugin } from "./modules/auth/auth.plugin.js";
-import { anonymousSessionResolver, type SessionResolver } from "./modules/auth/auth.types.js";
+import type { SessionResolver } from "./modules/auth/auth.types.js";
 import { catalogRoutes } from "./modules/catalog/catalog.routes.js";
 import { healthRoutes, type HealthCheck } from "./modules/health/health.routes.js";
+import { createSmtpMailer, type Mailer } from "./modules/mail/mailer.js";
 import { errorHandlerPlugin } from "./plugins/error-handler.js";
 import { openApiPlugin } from "./plugins/openapi.js";
 import { securityPlugin } from "./plugins/security.js";
@@ -26,7 +30,10 @@ export interface AppDependencies {
   database: Database;
   /** Dependency probes for GET /api/v1/health. Default: database ping. */
   healthChecks?: HealthCheck[];
+  /** Default: sessions stored in PostgreSQL. */
   sessionResolver?: SessionResolver;
+  /** Default: SMTP (Mailpit in development). */
+  mailer?: Mailer;
   /** Overrides the log destination (tests capture log lines through it). */
   logStream?: LogDestination;
 }
@@ -40,7 +47,7 @@ function generateRequestId(request: IncomingMessage): string {
   return typeof header === "string" && incomingRequestId.test(header) ? header : randomUUID();
 }
 
-export async function buildApp({ env, database, healthChecks, sessionResolver = anonymousSessionResolver, logStream }: AppDependencies) {
+export async function buildApp({ env, database, healthChecks, sessionResolver, mailer, logStream }: AppDependencies) {
   const checks = healthChecks ?? [{ name: "database", check: () => database.ping() }];
   const app = Fastify({
     logger: buildLoggerOptions(env, logStream),
@@ -76,13 +83,15 @@ export async function buildApp({ env, database, healthChecks, sessionResolver = 
   await app.register(errorHandlerPlugin);
   await app.register(securityPlugin, { env });
   await app.register(openApiPlugin, { env });
-  await app.register(authPlugin, { sessionResolver });
+  await app.register(cookie);
+  await app.register(authPlugin, { sessionResolver: sessionResolver ?? createDbSessionResolver(database.db, env) });
 
   await app.register(
     async (api) => {
       await api.register(healthRoutes, { checks, version: env.APP_VERSION });
       await api.register(catalogRoutes, { db: database.db });
-      // Further modules (accounts, cart, orders, ...) are registered here in later phases.
+      await api.register(accountsRoutes, { db: database.db, env, mailer: mailer ?? createSmtpMailer(env) });
+      // Further modules (cart, orders, ...) are registered here in later phases.
     },
     { prefix: API_PREFIX },
   );
