@@ -5,21 +5,21 @@ import { createContext, useContext, useMemo, useState } from "react";
 interface StorefrontContextValue {
   cartCount: number;
   favoriteIds: Set<string>;
-  addToCart: () => void;
+  addToCart: (productId: string, variantId: string) => void;
   toggleFavorite: (id: string) => void;
 }
 
 const StorefrontContext = createContext<StorefrontContextValue | null>(null);
 
 export function StorefrontProvider({ children }: { children: React.ReactNode }) {
-  const [cartCount, setCartCount] = useState(0);
+  const [cartLines, setCartLines] = useState<Array<{ productId: string; variantId: string }>>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   const value = useMemo<StorefrontContextValue>(
     () => ({
-      cartCount,
+      cartCount: cartLines.length,
       favoriteIds,
-      addToCart: () => setCartCount((count) => count + 1),
+      addToCart: (productId, variantId) => setCartLines((lines) => [...lines, { productId, variantId }]),
       toggleFavorite: (id) =>
         setFavoriteIds((current) => {
           const next = new Set(current);
@@ -28,7 +28,7 @@ export function StorefrontProvider({ children }: { children: React.ReactNode }) 
           return next;
         }),
     }),
-    [cartCount, favoriteIds],
+    [cartLines.length, favoriteIds],
   );
 
   return <StorefrontContext.Provider value={value}>{children}</StorefrontContext.Provider>;

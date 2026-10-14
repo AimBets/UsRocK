@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import { StorefrontProvider } from "@/components/storefront/storefront-provider";
 import "./globals.css";
 
@@ -15,10 +16,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html data-scroll-behavior="smooth" lang="pt-BR">
       <body>
         <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
-        <StorefrontProvider>{children}</StorefrontProvider>
+        <AuthProvider><StorefrontProvider>{children}</StorefrontProvider></AuthProvider>
       </body>
     </html>
   );

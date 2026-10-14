@@ -1,17 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Heart, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { navigation } from "@/data/storefront";
+import { useAuth } from "@/components/auth/auth-provider";
 import { useStorefront } from "./storefront-provider";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [searchMessage, setSearchMessage] = useState("");
   const { cartCount, favoriteIds } = useStorefront();
+  const { status: authStatus, user } = useAuth();
 
   useEffect(() => {
     document.body.style.overflow = menuOpen || searchOpen || cartOpen ? "hidden" : "";
@@ -20,21 +21,12 @@ export function Header() {
     };
   }, [cartOpen, menuOpen, searchOpen]);
 
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSearchMessage(
-      query.trim()
-        ? `Busca demonstrativa por “${query.trim()}”. A API de catálogo ainda será integrada.`
-        : "Digite um termo para testar a interface de busca.",
-    );
-  }
-
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-obsidian/92 text-white backdrop-blur-xl">
         <div className="shell flex h-[4.75rem] items-center justify-between gap-4">
           <button
-            className="icon-button lg:hidden"
+            className="icon-button mobile-menu-trigger"
             type="button"
             aria-label="Abrir menu"
             aria-expanded={menuOpen}
@@ -43,9 +35,9 @@ export function Header() {
             <Menu size={22} />
           </button>
 
-          <a className="brand-mark" href="#top" aria-label="UsRock — início">
+          <Link className="brand-mark" href="/" aria-label="UsRock — início">
             US<span>R</span>OCK
-          </a>
+          </Link>
 
           <nav className="hidden items-center gap-7 lg:flex" aria-label="Navegação principal">
             {navigation.map((item) => (
@@ -63,10 +55,11 @@ export function Header() {
             <button className="icon-button" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}>
               <Search size={20} />
             </button>
-            <button className="icon-button hidden sm:grid" type="button" aria-label="Minha conta — em breve">
+            <Link className="icon-button relative" href="/conta" aria-label={authStatus === "authenticated" ? `Minha conta — ${user?.name}` : "Entrar ou criar conta"}>
               <UserRound size={20} />
-            </button>
-            <button className="icon-button relative hidden sm:grid" type="button" aria-label={`${favoriteIds.size} favoritos`}>
+              {authStatus === "authenticated" && <span className="auth-indicator" aria-hidden="true" />}
+            </Link>
+            <button className="icon-button header-favorite-button relative" type="button" aria-label={`${favoriteIds.size} favoritos`}>
               <Heart size={20} />
               {favoriteIds.size > 0 && <span className="counter">{favoriteIds.size}</span>}
             </button>
@@ -98,7 +91,7 @@ export function Header() {
               </a>
             ))}
           </nav>
-          <p className="mt-auto text-xs leading-6 text-stone-500">Coleção demonstrativa · integração de catálogo pendente</p>
+          <p className="mt-auto text-xs leading-6 text-stone-500">Catálogo conectado à API da UsRock.</p>
         </aside>
       </div>
 
@@ -120,7 +113,7 @@ export function Header() {
         <div className="shell relative pt-24">
           <button className="icon-button absolute right-5 top-5" type="button" onClick={() => setSearchOpen(false)} aria-label="Fechar busca"><X size={24} /></button>
           <span className="eyebrow">Encontre sua próxima peça</span>
-          <form className="mt-8 border-b border-stone-600" onSubmit={submitSearch}>
+          <form action="/catalogo" className="mt-8 border-b border-stone-600" method="get">
             <label className="sr-only" htmlFor="site-search">Buscar produtos</label>
             <div className="flex items-center gap-4">
               <Search className="text-copper" size={30} />
@@ -128,13 +121,12 @@ export function Header() {
                 autoFocus={searchOpen}
                 className="w-full bg-transparent py-5 font-display text-3xl uppercase text-white outline-none placeholder:text-stone-700 md:text-6xl"
                 id="site-search"
-                onChange={(event) => { setQuery(event.target.value); setSearchMessage(""); }}
+                name="q"
                 placeholder="BUSCAR POR..."
-                value={query}
               />
             </div>
           </form>
-          <p className="mt-5 min-h-6 text-sm text-stone-400" aria-live="polite">{searchMessage || "Sugestões: oversized, festival, heavy metal"}</p>
+          <p className="mt-5 min-h-6 text-sm text-stone-400">A busca consulta nome e descrição no catálogo real.</p>
         </div>
       </div>
     </>

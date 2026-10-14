@@ -1,30 +1,14 @@
-export type ProductAvailability = "in_stock" | "out_of_stock" | "unknown";
+import type { components } from "@/types/openapi";
 
-export interface Money {
-  amount: number;
-  currencyCode: string;
-}
-
-export interface ProductVariant {
-  id: string;
-  size: string;
-  availability: ProductAvailability;
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  collection: string;
-  price: Money;
-  compareAtPrice?: Money;
-  image: string;
-  imageAlt: string;
-  variants: ProductVariant[];
-  availability: ProductAvailability;
-  label?: string;
-  tone: "black" | "graphite" | "bone";
-  dataStatus: "demo" | "live";
-}
+export type Money = components["schemas"]["Money"];
+export type ProductAvailability = components["schemas"]["Availability"];
+export type ProductVariant = components["schemas"]["ProductVariant"];
+export type Product = components["schemas"]["ProductSummary"];
+export type ProductDetail = components["schemas"]["ProductDetail"];
+export type Collection = components["schemas"]["Collection"];
+export type Category = components["schemas"]["Category"];
+export type PageInfo = components["schemas"]["PageInfo"];
+export type ApiErrorResponse = components["schemas"]["ErrorResponse"];
 
 export interface NavigationItem {
   label: string;
