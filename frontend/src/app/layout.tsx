@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import { StorefrontProvider } from "@/components/storefront/storefront-provider";
 import "./globals.css";
 
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="pt-BR">
       <body>
         <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
-        <StorefrontProvider>{children}</StorefrontProvider>
+        <AuthProvider><StorefrontProvider>{children}</StorefrontProvider></AuthProvider>
       </body>
     </html>
   );

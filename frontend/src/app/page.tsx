@@ -5,9 +5,16 @@ import { Footer } from "@/components/storefront/footer";
 import { Header } from "@/components/storefront/header";
 import { Hero } from "@/components/storefront/hero";
 import { ProductCard } from "@/components/storefront/product-card";
-import { genres, products } from "@/data/storefront";
+import { CatalogState } from "@/components/storefront/catalog-state";
+import { getCollections, getProducts } from "@/lib/api/catalog";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [productsResult, collectionsResult] = await Promise.allSettled([getProducts({ limit: 6 }), getCollections(4)]);
+  const products = productsResult.status === "fulfilled" ? productsResult.value.data : [];
+  const collections = collectionsResult.status === "fulfilled" ? collectionsResult.value.data : [];
+  const catalogUnavailable = productsResult.status === "rejected";
   return (
     <div id="top">
       <AnnouncementBar />
@@ -23,13 +30,15 @@ export default function Home() {
                 <h2 className="section-title" id="new-title">Novidades<br />em alto volume.</h2>
               </div>
               <div className="max-w-sm border-l border-copper/50 pl-5 text-sm leading-6 text-stone-400">
-                <p>Uma primeira seleção de produtos fictícios para validar a experiência da vitrine. Preços, estoque e condições aguardam integração.</p>
-                <a className="text-link mt-5" href="#camisetas">Ver todas as camisetas <ArrowRight size={15} /></a>
+                <p>Seleção carregada diretamente do catálogo UsRock. Itens marcados como demonstrativos usam o seed de desenvolvimento.</p>
+                <a className="text-link mt-5" href="/catalogo">Ver catálogo completo <ArrowRight size={15} /></a>
               </div>
             </div>
             <div className="mt-10 grid gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {products.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}
             </div>
+            {catalogUnavailable && <CatalogState kind="error" message="O catálogo está temporariamente indisponível. A identidade da loja permanece acessível enquanto restabelecemos a conexão." />}
+            {!catalogUnavailable && products.length === 0 && <CatalogState kind="empty" message="Nenhum produto publicado no momento." />}
           </div>
         </section>
 
@@ -38,22 +47,23 @@ export default function Home() {
             <p className="eyebrow text-rust">Explore por identidade</p>
             <div className="mt-3 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
               <h2 className="section-title text-ink" id="genres-title">Sua cena.<br />Seu uniforme.</h2>
-              <p className="max-w-md text-sm leading-6 text-stone-600">Coleções editoriais organizadas por atitude e linguagem visual. Os nomes são categorias conceituais, sem associação a artistas reais.</p>
+              <p className="max-w-md text-sm leading-6 text-stone-600">Coleções publicadas e organizadas pelo catálogo da UsRock.</p>
             </div>
             <div className="mt-10 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {genres.map((genre, index) => (
-                <a className="genre-card" href="#camisetas" key={genre.name}>
-                  <Image alt={genre.imageAlt} className="absolute inset-0 -z-10 object-cover" fill sizes="(max-width: 768px) 100vw, 25vw" src={genre.image} />
-                  <span className="text-[0.62rem] tracking-[0.2em] text-stone-500">{genre.code}</span>
+              {collections.map((collection, index) => (
+                <a className="genre-card" href={`/catalogo?collection=${collection.slug}`} key={collection.id}>
+                  {collection.heroMedia && <Image alt={collection.heroMedia.alt} className="absolute inset-0 -z-10 object-cover" fill sizes="(max-width: 768px) 100vw, 25vw" src={collection.heroMedia.url} unoptimized={collection.heroMedia.url.startsWith("http")} />}
+                  <span className="text-[0.62rem] tracking-[0.2em] text-stone-400">COLEÇÃO / {String(index + 1).padStart(2, "0")}</span>
                   <div className="relative z-10 mt-auto">
-                    <span className="block font-display text-4xl uppercase leading-none">{genre.name}</span>
-                    <span className="mt-3 block text-xs text-stone-500">{genre.note}</span>
+                    <span className="block font-display text-4xl uppercase leading-none">{collection.title}</span>
+                    <span className="mt-3 block text-xs text-stone-300">{collection.description ?? "Conheça os produtos desta coleção."}</span>
                   </div>
                   <span className="genre-index">0{index + 1}</span>
                   <ArrowRight className="absolute right-5 top-5" size={18} />
                 </a>
               ))}
             </div>
+            {collectionsResult.status === "fulfilled" && collections.length === 0 && <CatalogState kind="empty" message="Nenhuma coleção publicada no momento." />}
           </div>
         </section>
 
@@ -61,11 +71,12 @@ export default function Home() {
           <div className="shell">
             <div className="section-heading">
               <div><p className="eyebrow">Essenciais da casa</p><h2 className="section-title" id="shirts-title">Camisetas<br />autorais.</h2></div>
-              <p className="max-w-sm text-sm leading-6 text-stone-400">Modelagens amplas, composições gráficas originais e uma base visual preparada para receber catálogo, variantes e estoque reais.</p>
+              <p className="max-w-sm text-sm leading-6 text-stone-400">Produtos, variantes, preços e disponibilidade fornecidos pela API. Itens de seed permanecem identificados.</p>
             </div>
             <div className="mt-10 grid gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {products.slice(3).map((product) => <ProductCard key={product.id} product={product} />)}
             </div>
+            {!catalogUnavailable && products.length > 0 && products.length <= 3 && <CatalogState kind="empty" message="Não há outros produtos publicados nesta seleção." />}
           </div>
         </section>
 
@@ -93,7 +104,7 @@ export default function Home() {
               <p className="eyebrow text-rust">Manifesto UsRock</p>
               <h2 className="section-title text-ink" id="manifesto-title">Não seguimos<br />a cena. Vivemos nela.</h2>
               <p className="mt-7 max-w-xl text-base leading-8 text-stone-600">A UsRock nasce para traduzir a energia da música em peças com acabamento, presença e identidade. Sem fantasia de rebeldia pronta: design autoral, repertório visual e respeito por cada comunidade.</p>
-              <p className="mt-5 max-w-xl text-base leading-8 text-stone-600">Esta primeira experiência estabelece a direção da marca. Produtos, políticas e informações comerciais ainda são demonstrativos até a operação ser conectada e validada.</p>
+              <p className="mt-5 max-w-xl text-base leading-8 text-stone-600">O catálogo agora vem da operação local integrada. Produtos sinalizados como demonstrativos ainda não representam condições comerciais finais.</p>
               <a className="text-link mt-8 text-ink" href="#top">Voltar ao início <ArrowRight size={15} /></a>
             </div>
           </div>

@@ -21,22 +21,22 @@
 - [~] Base do frontend gerada e executável localmente; aprovação da stack completa e infraestrutura compartilhada pendentes.
 - [~] Homepage premium refinada; lint, TypeScript, build e resposta HTTP local validados; inspeção visual em navegador e aprovação final pendentes.
 - [x] Backend criado e executando localmente (E1: fundação; lint, typecheck, build, 40 testes unitários e 4 de integração passaram em 2026-10-13; sem commit até autorização).
-- [ ] Integração básica frontend/backend funcionando.
+- [x] Integração frontend/backend E1/E2 validada localmente: rewrite, catálogo, filtros, produto e estados consultando PostgreSQL via Fastify.
 - [ ] Admin e CMS implementados.
 - [ ] Editor de landing pages implementado.
 - [ ] Integrações comerciais implementadas e testadas em sandbox.
 - [ ] Segurança, QA, homologação e deploy concluídos.
 
 ## Próxima ação prioritária
-1. Revisar e autorizar commit/PR das entregas E1, E2 e E3 do backend (`claude/backend`); depois, Codex conectar catálogo e contas à API (rewrite `/api/*`, Money em centavos, telas de login/cadastro/redefinição de senha) e autorizar a E4 (carrinho e marketing) do Claude. Convenções, sessão, permissões e modelo de dados planejado já estão em `docs/API_CONTRACTS.md`.
+1. Revisar a integração E1/E2 do frontend e autorizar commit/PR quando aprovada; depois, autorizar o Codex a iniciar as telas de contas E3. Carrinho e marketing E4 continuam fora do escopo desta etapa.
 2. Inspecionar a homepage em navegador desktop e mobile; ajustar design conforme screenshots e aprovar tokens/identidade.
 3. Criar testes de interação/acessibilidade e iniciar catálogo e página de produto após contratos acordados.
 
 ## Registro das integrações
 | Funcionalidade | Frontend | Backend | Estado da integração |
 |---|---|---|---|
-| Saúde da API | Não se aplica | Implementado (`/api/v1/health`) | Não consumido pela loja |
-| Catálogo | Pendente (usa mock) | Implementado e testado (E2: `/products`, `/products/{slug}`, `/collections`, `/categories`) | API pronta localmente; frontend ainda não conectado |
+| Saúde da API | Rewrite validado | Implementado (`/api/v1/health`) | Next → Fastify → PostgreSQL comprovado localmente |
+| Catálogo | Implementado e validado (`/`, `/catalogo`, `/produto/[slug]`) | Implementado e testado (E2: `/products`, `/products/{slug}`, `/collections`, `/categories`) | Integrado localmente; seed permanece `isDemo` |
 | Login | Pendente | Implementado e testado (E3: cadastro, login, logout, `/me`, troca e recuperação de senha) | API pronta localmente; telas pendentes |
 | Frete | Pendente | Pendente | Não iniciado |
 | Checkout | Pendente | Pendente | Não iniciado |
@@ -44,6 +44,17 @@
 
 ## Alterações recentes
 - Bootstrap: estrutura inicial e documentos criados. Nenhuma integração funcional afirmada.
+
+## Registro factual — Integração frontend E1/E2 validada, 2026-10-13 (Codex)
+- Branch `codex/integracao-backend` confirmada, árvore inicialmente limpa, remoto `AimBets/UsRocK`; `frontend/` e `backend/` presentes. Nenhum arquivo de `backend/` foi alterado.
+- Implementados rewrite same-origin `/api/*` → Fastify, ambiente somente servidor, cliente HTTP tipado, tratamento de erros por `code`, timeout, encaminhamento server-only de cookie, gerador local de tipos a partir do OpenAPI e formatação de `Money.amountMinor` em BRL.
+- Homepage passou a consumir produtos/coleções da E2; criadas listagem `/catalogo` com capacidades reais da API e página `/produto/[slug]` com galeria/variantes/preços/disponibilidade. Adicionados loading, vazio, erro, indisponibilidade e 404, preservando hero, paleta e linguagem visual.
+- Itens `isDemo` continuam explicitamente ilustrativos; sacola permanece local/demonstrativa porque carrinho ainda não foi implementado no backend. Não há endpoint de relacionados; a página usa apenas listagem transparente da mesma categoria.
+- O erro `setup refresh had errors` foi identificado como falha transitória do helper/sandbox ao criar processos; a execução foi recuperada sem reinstalar dependências. A auditoria usou uma sessão externa local autorizada.
+- OpenAPI generate/check, ESLint, TypeScript e build passaram. Migração e seed idempotentes passaram; PostgreSQL apresentou 6 produtos, 26 variantes, 6 mídias, 3 coleções e 1 categoria.
+- Prova ponta a ponta: a linha PostgreSQL `nocturne-wings-oversized|Nocturne Wings Oversized|12990` coincidiu com Fastify e com o objeto recebido pelo rewrite Next. Homepage, catálogo, filtros, cursor, ordenação, detalhe, mídia, BRL, vazio, indisponibilidade, erro 400 e 404 foram exercitados.
+- Correção relevante: removido o loading global que fazia produto inexistente iniciar streaming com HTTP 200; loading permaneceu em `/catalogo` e o detalhe inexistente passou a responder 404.
+- Nenhum erro do backend foi encontrado; nenhum arquivo em `backend/` foi modificado. Próximo passo exato: revisão da integração E1/E2 e, somente após aprovação, início da UI de autenticação E3.
 
 ## Bloqueios / riscos
 - Definir modelo de hospedagem (stack do backend definida em 2026-10-13).
