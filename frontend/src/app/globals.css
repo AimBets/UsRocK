@@ -28,12 +28,13 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .skip-link:focus { top: 1rem; }
 .font-display { font-family: var(--font-display); font-stretch: condensed; }
 
-.brand-mark { font-family: var(--font-display); font-size: 1.55rem; font-weight: 900; letter-spacing: -0.06em; line-height: 1; }
+.brand-mark { white-space: nowrap; font-family: var(--font-display); font-size: 1.55rem; font-weight: 900; letter-spacing: -0.06em; line-height: 1; }
 .brand-mark span { color: #c77742; display: inline-block; transform: skew(-8deg); }
 .nav-link { position: relative; font-size: .67rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; transition: color .2s ease; }
 .nav-link::after { position: absolute; right: 0; bottom: -.55rem; left: 0; height: 1px; background: #c77742; content: ""; transform: scaleX(0); transform-origin: right; transition: transform .25s ease; }
 .nav-link:hover::after { transform: scaleX(1); transform-origin: left; }
 .icon-button { display: grid; min-width: 2.75rem; min-height: 2.75rem; place-items: center; color: inherit; transition: color .2s, background .2s; }
+.header-favorite-button { display: none; }
 .icon-button:hover { background: rgba(255,255,255,.06); color: #c77742; }
 .counter { position: absolute; right: .1rem; top: .1rem; display: grid; width: 1rem; height: 1rem; place-items: center; border-radius: 999px; background: #c77742; color: #090909; font-size: .58rem; font-weight: 800; }
 .auth-indicator { position: absolute; right: .35rem; top: .4rem; width: .45rem; height: .45rem; border: 1px solid #090909; border-radius: 999px; background: #c77742; }
@@ -89,14 +90,14 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .account-stage { position: relative; min-height: 45rem; overflow: hidden; background: #090909; color: #efede7; }
 .account-stage::before { position: absolute; inset: 0; background: radial-gradient(circle at 12% 15%, rgba(199,119,66,.15), transparent 28%), linear-gradient(120deg, transparent 0 47%, rgba(255,255,255,.035) 47% 47.15%, transparent 47.15%); content: ""; }
 .account-grid { position: relative; display: grid; gap: 2rem; padding-block: 3.5rem; }
-.account-editorial { display: flex; min-height: 22rem; flex-direction: column; justify-content: center; }
+.account-editorial { display: flex; min-width: 0; min-height: 22rem; flex-direction: column; justify-content: center; }
 .account-editorial h1, .account-dashboard-heading h1, .legal-page h1 { margin-top: 1rem; max-width: 9ch; font-family: var(--font-display); font-size: clamp(3.7rem, 8vw, 7.5rem); font-weight: 900; letter-spacing: -.055em; line-height: .78; text-transform: uppercase; }
 .account-editorial > p:not(.eyebrow) { margin-top: 2rem; max-width: 34rem; color: #a8a29e; font-size: .9rem; line-height: 1.75; }
 .account-rule { display: flex; max-width: 34rem; justify-content: space-between; border-block: 1px solid rgba(255,255,255,.1); margin-top: 2.5rem; padding-block: .8rem; color: #78716c; font-size: .58rem; font-weight: 800; letter-spacing: .17em; }
 .account-note { margin-top: auto; max-width: 34rem; border-left: 2px solid #c77742; padding-left: 1rem; color: #78716c; font-size: .7rem; line-height: 1.6; }
-.account-panel { align-self: center; border: 1px solid rgba(255,255,255,.1); background: rgba(18,18,18,.94); padding: clamp(1.4rem, 4vw, 3rem); box-shadow: 1.5rem 1.5rem 0 rgba(199,119,66,.06); }
+.account-panel { min-width: 0; align-self: center; border: 1px solid rgba(255,255,255,.1); background: rgba(18,18,18,.94); padding: clamp(1.4rem, 4vw, 3rem); box-shadow: 1.5rem 1.5rem 0 rgba(199,119,66,.06); }
 .auth-panel-heading > span { color: #c77742; font-size: .58rem; font-weight: 800; letter-spacing: .18em; }
-.auth-panel-heading h2 { margin-top: .75rem; font-family: var(--font-display); font-size: clamp(2.2rem, 4vw, 3.25rem); line-height: .9; text-transform: uppercase; }
+.auth-panel-heading h2 { margin-top: .75rem; overflow-wrap: anywhere; font-family: var(--font-display); font-size: clamp(2.2rem, 4vw, 3.25rem); line-height: .9; text-transform: uppercase; }
 .auth-panel-heading p { margin-top: 1rem; color: #a8a29e; font-size: .78rem; line-height: 1.6; }
 .auth-form { display: grid; gap: 1.1rem; margin-top: 2rem; }
 .auth-field { display: grid; gap: .5rem; }
@@ -187,7 +188,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   .account-dashboard-heading { flex-direction: row; align-items: end; justify-content: space-between; }
 }
 
+@media (min-width: 640px) {
+  .header-favorite-button { display: grid; }
+}
+
 @media (min-width: 1024px) {
+  .mobile-menu-trigger { display: none; }
   .festival-ticket { display: block; }
   .benefit:nth-child(odd) { border-right: 0; }
   .account-grid { min-height: 48rem; grid-template-columns: minmax(0,1.05fr) minmax(27rem,.75fr); gap: 5rem; padding-block: 5rem; }

@@ -25,7 +25,7 @@ export async function login(input: LoginRequest): Promise<CurrentUser> {
 }
 
 export function logout() {
-  return apiRequest<void>("/api/v1/auth/logout", jsonRequest());
+  return apiRequest<void>("/api/v1/auth/logout", jsonRequest({}));
 }
 
 export async function getCurrentUser(): Promise<CurrentUser> {

@@ -26,7 +26,7 @@ export function Header() {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-obsidian/92 text-white backdrop-blur-xl">
         <div className="shell flex h-[4.75rem] items-center justify-between gap-4">
           <button
-            className="icon-button lg:hidden"
+            className="icon-button mobile-menu-trigger"
             type="button"
             aria-label="Abrir menu"
             aria-expanded={menuOpen}
@@ -59,7 +59,7 @@ export function Header() {
               <UserRound size={20} />
               {authStatus === "authenticated" && <span className="auth-indicator" aria-hidden="true" />}
             </Link>
-            <button className="icon-button relative hidden sm:grid" type="button" aria-label={`${favoriteIds.size} favoritos`}>
+            <button className="icon-button header-favorite-button relative" type="button" aria-label={`${favoriteIds.size} favoritos`}>
               <Heart size={20} />
               {favoriteIds.size > 0 && <span className="counter">{favoriteIds.size}</span>}
             </button>
