@@ -1,11 +1,11 @@
 import type { ProductVariant } from "@/types/catalog";
-import type { CartLine, CommerceProductSnapshot, FavoriteItem, LocalCartTotals } from "@/types/commerce";
+import type { CommerceProductSnapshot, FavoriteItem, LocalCartLine, LocalCartTotals } from "@/types/commerce";
 
 export const COMMERCE_STORAGE_KEY = "usrock-commerce-preview-v1";
 export const MAX_PREVIEW_QUANTITY = 10;
 
 export interface CommerceState {
-  cartLines: CartLine[];
+  cartLines: LocalCartLine[];
   favorites: FavoriteItem[];
 }
 
@@ -44,7 +44,7 @@ export function commerceReducer(state: CommerceState, action: CommerceAction): C
   };
 }
 
-export function calculateLocalCartTotals(lines: CartLine[]): LocalCartTotals {
+export function calculateLocalCartTotals(lines: LocalCartLine[]): LocalCartTotals {
   if (!lines.length) return { subtotal: null, itemCount: 0 };
   const currencyCode = lines[0].variant.price.currencyCode;
   const compatible = lines.every((line) => line.variant.price.currencyCode === currencyCode);
@@ -55,6 +55,19 @@ export function calculateLocalCartTotals(lines: CartLine[]): LocalCartTotals {
       currencyCode,
     } : null,
   };
+}
+
+export function createCartMigrationTargets(lines: LocalCartLine[], serverItems: Array<{ variant: { id: string }; quantity: number }>) {
+  const current = new Map(serverItems.map((item) => [item.variant.id, item.quantity]));
+  return Object.fromEntries(lines.map((line) => [line.variant.id, Math.min(MAX_PREVIEW_QUANTITY, (current.get(line.variant.id) ?? 0) + line.quantity)]));
+}
+
+export function remainingCartImport(targets: Record<string, number>, serverItems: Array<{ variant: { id: string }; quantity: number }>) {
+  const current = new Map(serverItems.map((item) => [item.variant.id, item.quantity]));
+  return Object.entries(targets).flatMap(([variantId, target]) => {
+    const quantity = Math.max(0, Math.min(MAX_PREVIEW_QUANTITY, target) - (current.get(variantId) ?? 0));
+    return quantity ? [{ variantId, quantity }] : [];
+  });
 }
 
 export function parseStoredCommerce(value: string | null): CommerceState {
@@ -117,7 +130,7 @@ function parseProduct(value: unknown): CommerceProductSnapshot | null {
   return { id: value.id, slug: value.slug, name: value.name, isDemo: value.isDemo, image, variants };
 }
 
-function parseCartLine(value: unknown): CartLine[] {
+function parseCartLine(value: unknown): LocalCartLine[] {
   if (!isRecord(value)) return [];
   const product = parseProduct(value.product);
   const quantity = typeof value.quantity === "number" && Number.isFinite(value.quantity) ? Math.floor(value.quantity) : 0;

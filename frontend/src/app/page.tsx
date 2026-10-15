@@ -8,14 +8,16 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { CatalogState } from "@/components/storefront/catalog-state";
 import { CampaignPanel } from "@/components/commerce/campaign-panel";
 import { getCollections, getProducts } from "@/lib/api/catalog";
+import { getActiveCampaigns } from "@/lib/api/commerce";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [productsResult, collectionsResult] = await Promise.allSettled([getProducts({ limit: 6 }), getCollections(4)]);
+  const [productsResult, collectionsResult, campaignsResult] = await Promise.allSettled([getProducts({ limit: 6 }), getCollections(4), getActiveCampaigns("home_panel")]);
   const products = productsResult.status === "fulfilled" ? productsResult.value.data : [];
   const collections = collectionsResult.status === "fulfilled" ? collectionsResult.value.data : [];
   const catalogUnavailable = productsResult.status === "rejected";
+  const campaign = campaignsResult.status === "fulfilled" ? campaignsResult.value.data[0] ?? null : null;
   return (
     <div id="top">
       <AnnouncementBar />
@@ -81,7 +83,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <CampaignPanel />
+        <CampaignPanel campaign={campaign} />
 
         <section className="festival-section" id="festivais" aria-labelledby="festival-title">
           <div className="festival-grid" aria-hidden="true" />

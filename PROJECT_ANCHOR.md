@@ -15,7 +15,7 @@
 - Claude: `backend/`, contratos de APIs e integrações.
 - Ambos: leitura dos handoffs; registro de suas tarefas; documentação central reconciliada a cada integração.
 
-## Estado atual — backend E4 implementado e testado; integração frontend E4 pendente
+## Estado atual — E4 integrada e testada ponta a ponta
 - [x] Definição de escopo e divisão de responsabilidades.
 - [x] Documentos iniciais de colaboração criados (após serem inseridos no repositório).
 - [~] Base do frontend gerada e executável localmente; aprovação da stack completa e infraestrutura compartilhada pendentes.
@@ -23,7 +23,7 @@
 - [x] Backend criado e executando localmente (E1: fundação; lint, typecheck, build, 40 testes unitários e 4 de integração passaram em 2026-10-13; sem commit até autorização).
 - [x] Integração frontend/backend E1/E2 validada localmente: rewrite, catálogo, filtros, produto e estados consultando PostgreSQL via Fastify.
 - [~] Autenticação E3 implementada e validada ponta a ponta no frontend; revisão e commit/PR das correções finais pendentes.
-- [~] Prévia frontend E4 implementada para sacola, favoritos, campanhas, cupom e newsletter; estado local testado, mas integração com API e inspeção visual em navegador permanecem pendentes.
+- [x] Frontend E4 integrado às APIs reais de sacola, favoritos, campanhas, cupom e newsletter; migração local, Mailpit, falhas e responsividade testados.
 - [x] Backend E4 implementado e testado localmente (sacola de visitante/conta com junção no login, favoritos, cupons, campanhas, newsletter com dupla confirmação; 89 unitários + 66 de integração e verificação ao vivo em 2026-10-15; sem commit até autorização).
 - [x] Regressão de vitrines investigada e recuperada: Fastify offline era a causa; seis produtos, detalhes e imagens foram revalidados de PostgreSQL até o build Next, sem mocks e sem alteração no backend.
 - [ ] Admin e CMS implementados.
@@ -32,9 +32,9 @@
 - [ ] Segurança, QA, homologação e deploy concluídos.
 
 ## Próxima ação prioritária
-1. Revisar a branch `codex/e4-commerce` e executar `npm.cmd run test:catalog-live` com PostgreSQL, Fastify e Next ativos antes de autorizar commit/PR.
-2. Completar QA interativo da E4 em 390, 768, 1024 e 1440 px; catálogo e detalhe já tiveram inspeção visual desktop e o hero foi inspecionado em desktop/mobile.
-3. Revisar e autorizar o commit/PR da branch `claude/e4-commerce` (backend E4). Em seguida, o Codex integra a UI E4 aos endpoints documentados em `docs/API_CONTRACTS.md` (pedidos em `docs/HANDOFF_CLAUDE.md`), incluindo as páginas `/newsletter/confirmar` e `/newsletter/cancelar`.
+1. Revisar o diff da branch `codex/e4-integracao` e autorizar commit/PR; nenhum commit, push ou merge foi realizado pelo Codex.
+2. Manter `test:catalog-live`, `test:commerce-live` e `test:responsive-live` na revisão integrada com PostgreSQL, Fastify, Next e Mailpit ativos.
+3. Após aprovação da E4, iniciar a E5 no backend para frete, reserva de estoque, checkout e pedidos; o checkout continua corretamente desabilitado no frontend.
 
 ## Registro das integrações
 | Funcionalidade | Frontend | Backend | Estado da integração |
@@ -42,15 +42,28 @@
 | Saúde da API | Rewrite validado | Implementado (`/api/v1/health`) | Next → Fastify → PostgreSQL comprovado localmente |
 | Catálogo | Implementado e validado (`/`, `/catalogo`, `/produto/[slug]`) | Implementado e testado (E2: `/products`, `/products/{slug}`, `/collections`, `/categories`) | Integrado localmente; seed permanece `isDemo` |
 | Login | Implementado e validado (`/entrar`, `/cadastro`, `/conta`, recuperação e redefinição) | Implementado e testado (E3: cadastro, login, logout, `/me`, troca e recuperação de senha) | Integrado ponta a ponta via rewrite; revisão/PR do frontend pendentes |
-| Carrinho e favoritos | Prévia local testada (`/carrinho`, drawer e `/favoritos`) | Implementado e testado (E4: `/cart*`, `/me/favorites*`) | Integração pendente (Codex); servidor é a fonte de preço, estoque, desconto e totais |
-| Cupons e campanhas | Interfaces preparatórias (`CouponForm`, `CampaignPanel`) | Implementado e testado (E4: `/cart/coupon`, `/campaigns/active`, admin mínimo) | Integração pendente (Codex); UI do admin pendente |
-| Newsletter | Formulário preparatório no rodapé | Implementado e testado (E4: inscrição, confirmação, descadastro) | Integração e páginas de confirmação/cancelamento pendentes (Codex) |
+| Carrinho e favoritos | Integrado e testado (`/carrinho`, drawer, `/favoritos`, migração local e junção pós-login) | Implementado e testado (E4: `/cart*`, `/me/favorites*`) | Integrado; servidor é a fonte de preço, estoque, desconto e totais |
+| Cupons e campanhas | Integrado (`CouponForm`, `CampaignPanel`) | Implementado e testado (E4: `/cart/coupon`, `/campaigns/active`, admin mínimo) | Loja integrada; UI administrativa continua futura (E6) |
+| Newsletter | Inscrição, confirmação e descadastro integrados | Implementado e testado (E4: inscrição, confirmação, descadastro) | Integrado ponta a ponta com consentimento explícito e Mailpit |
 | Frete | Pendente | Pendente | Não iniciado |
 | Checkout | Pendente | Pendente | Não iniciado |
 | Landing pages | Pendente | Pendente | Não iniciado |
 
 ## Alterações recentes
 - Bootstrap: estrutura inicial e documentos criados. Nenhuma integração funcional afirmada.
+
+## Registro factual — Integração frontend E4 definitiva, 2026-10-15 (Codex)
+- Na retomada final da revisão, branch `codex/e4-integracao` e `HEAD 36a5d74` foram reconfirmados. O diff continua restrito ao frontend e à documentação; OpenAPI, lint, TypeScript, 7/7 testes e build passaram novamente, e `git diff --check` não encontrou erro. Fastify e Next estavam desligados, então os checks ao vivo não foram repetidos nessa rodada; os resultados ponta a ponta anteriores permanecem válidos e documentados.
+- Remoto `AimBets/UsRocK`, branch `codex/e4-integracao` e `HEAD 36a5d74` confirmados; a branch parte do merge da PR #5 do backend E4 em `main/origin/main`. A árvore estava limpa no início. Nenhum arquivo em `backend/` foi modificado e nenhum commit, push ou merge foi feito.
+- Tipos de sacola, favoritos, campanhas e newsletter agora são gerados de `backend/openapi/openapi.json`; o check normaliza CRLF/LF sem mascarar diferenças de conteúdo.
+- A sacola usa exclusivamente `/api/v1/cart*`: visitante por cookie HttpOnly, conta após login, quantidades por `maxQuantity`, remoção, avisos por item, cupom e totais recebidos do servidor. Checkout/frete continuam desabilitados até E5.
+- A migração de `usrock-commerce-preview-v1` mantém carrinho e favoritos locais até cada sincronização confirmar sucesso. Um diário de metas torna a importação retomável após resposta perdida: a repetição envia somente o delta ainda ausente, evitando duplicação; itens ignorados são informados.
+- Favoritos permanecem locais para visitante e são unidos à conta após login. Campanhas publicadas de `home_panel` respeitam o feed ativo, conteúdo, vigência, coleção, CTA, mídia, cupom e `isDemo`. Cupom exibe somente desconto/elegibilidade/motivos retornados pela API.
+- Newsletter exige consentimento de marketing desmarcado e explícito, envia inscrição 202 e oferece páginas `/newsletter/confirmar` e `/newsletter/cancelar` com `noindex`, `no-referrer` e tratamento de token inválido. O opt-in do cadastro de conta não foi alterado nem forçado.
+- Estados de comunicação, estoque insuficiente, item indisponível, preço alterado, limite, sessão expirada e backend offline foram tratados. Com Fastify desligado, sacola e favoritos mostraram falha recuperável e preservação local; o hero/identidade continuou disponível.
+- Verificações finais: frontend lint, TypeScript, build, OpenAPI e **7/7 testes** passaram; backend lint, TypeScript, build, OpenAPI, **89/89 unitários** e **66/66 integrações PostgreSQL** passaram. `test:catalog-live` confirmou 6 produtos/detalhes/imagens; `test:commerce-live` confirmou visitante, persistência, DEMO10, cadastro/junção, quantidade, favorito, newsletter, confirmação e descadastro via Mailpit. A conta/inscrição fictícias foram removidas.
+- QA via Edge/CDP renderizou homepage, sacola e favoritos em 390, 768, 1024 e 1440 px e comprovou ausência de overflow. A skill de navegador interativo não expôs apps/browsers; a inspeção foi feita nas capturas reais do Edge headless. O cache gerado `.next`, bloqueado uma vez pelo OneDrive, foi removido e reconstruído com sucesso.
+- Próximo passo exato: revisão humana do diff e autorização de commit/PR da branch `codex/e4-integracao`; depois, E5 no backend para habilitar checkout, frete, reserva e pedidos.
 
 ## Registro factual — Backend E4 (sacola e marketing), 2026-10-15 (Claude)
 - Remoto `AimBets/UsRocK` e branch `claude/e4-commerce` (base `e030ad0`) confirmados. Nenhum arquivo de `frontend/` foi alterado; checkout, frete, Mercado Pago e SuperFrete não foram tocados (E5).
