@@ -20,7 +20,7 @@ services:
       timeout: 5s
       retries: 10
 
-  # Captures outgoing email locally (SMTP 1025, web UI 8025). No email is sent by the API yet.
+  # Captures outgoing email locally (SMTP 1025, web UI 8025): password reset, newsletter and order e-mails.
   mailpit:
     image: axllent/mailpit:v1
     restart: unless-stopped

@@ -132,9 +132,19 @@ export const productVariants = pgTable(
     compareAtPriceMinor: integer(),
     position: integer().notNull().default(0),
     isActive: boolean().notNull().default(true),
+    /** Packed shipping weight and dimensions (E5). Null: the store default per item is used. */
+    weightGrams: integer(),
+    heightCm: integer(),
+    widthCm: integer(),
+    lengthCm: integer(),
     ...timestamps,
   },
   (table) => [
+    check(
+      "product_variants_shipping_positive",
+      sql`(${table.weightGrams} IS NULL OR ${table.weightGrams} > 0) AND (${table.heightCm} IS NULL OR ${table.heightCm} > 0)
+        AND (${table.widthCm} IS NULL OR ${table.widthCm} > 0) AND (${table.lengthCm} IS NULL OR ${table.lengthCm} > 0)`,
+    ),
     check("product_variants_price_non_negative", sql`${table.priceMinor} >= 0`),
     check(
       "product_variants_compare_at_above_price",

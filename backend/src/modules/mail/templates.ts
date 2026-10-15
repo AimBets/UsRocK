@@ -57,3 +57,86 @@ export function newsletterConfirmationEmail(input: {
 <p><a href="${unsubscribeUrl}">Cancelar inscrição</a></p>`,
   };
 }
+
+// --- Pedidos (E5) ------------------------------------------------------------------------------
+
+export interface OrderEmailData {
+  to: string;
+  customerName: string;
+  orderNumber: string;
+  orderUrl: string;
+  items: { name: string; size: string; quantity: number; lineTotal: string }[];
+  subtotal: string;
+  discount: string | null;
+  shipping: string;
+  shippingService: string;
+  total: string;
+  destination: string;
+  isDemo: boolean;
+}
+
+function orderSummary(data: OrderEmailData) {
+  const lines = data.items.map((item) => `- ${item.quantity}× ${item.name} (${item.size}) — ${item.lineTotal}`);
+  const text = [
+    ...lines,
+    "",
+    `Subtotal: ${data.subtotal}`,
+    ...(data.discount ? [`Desconto: −${data.discount}`] : []),
+    `Frete (${data.shippingService}): ${data.shipping}`,
+    `Total: ${data.total}`,
+    `Entrega em: ${data.destination}`,
+  ];
+  const html = `<ul>${data.items
+    .map((item) => `<li>${item.quantity}× ${escapeHtml(item.name)} (${escapeHtml(item.size)}) — ${escapeHtml(item.lineTotal)}</li>`)
+    .join("")}</ul>
+<p>Subtotal: ${escapeHtml(data.subtotal)}<br>${data.discount ? `Desconto: −${escapeHtml(data.discount)}<br>` : ""}Frete (${escapeHtml(
+    data.shippingService,
+  )}): ${escapeHtml(data.shipping)}<br><strong>Total: ${escapeHtml(data.total)}</strong></p>
+<p>Entrega em: ${escapeHtml(data.destination)}</p>`;
+  return { text, html };
+}
+
+const demoNotice = "Pedido de DEMONSTRAÇÃO (catálogo ilustrativo): nada será cobrado ou enviado de verdade.";
+
+function orderEmail(data: OrderEmailData, subject: string, intro: string[]): MailMessage {
+  const summary = orderSummary(data);
+  return {
+    to: data.to,
+    subject,
+    text: [
+      `Olá, ${data.customerName}.`,
+      "",
+      ...(data.isDemo ? [demoNotice, ""] : []),
+      ...intro,
+      "",
+      ...summary.text,
+      "",
+      `Acompanhe o pedido: ${data.orderUrl}`,
+    ].join("\n"),
+    html: `<p>Olá, ${escapeHtml(data.customerName)}.</p>
+${data.isDemo ? `<p><strong>${demoNotice}</strong></p>` : ""}
+${intro.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("\n")}
+${summary.html}
+<p><a href="${escapeHtml(data.orderUrl)}">Acompanhar pedido</a></p>`,
+  };
+}
+
+export function orderReceivedEmail(data: OrderEmailData & { payUntil: string }): MailMessage {
+  return orderEmail(data, `Pedido ${data.orderNumber} recebido — aguardando pagamento`, [
+    `Recebemos seu pedido ${data.orderNumber}. Os itens ficam reservados até ${data.payUntil}.`,
+    "Se ainda não concluiu o pagamento, acesse o pedido pelo link abaixo.",
+  ]);
+}
+
+export function orderPaidEmail(data: OrderEmailData): MailMessage {
+  return orderEmail(data, `Pagamento aprovado — pedido ${data.orderNumber}`, [
+    `O pagamento do pedido ${data.orderNumber} foi aprovado. Agora vamos separar e enviar seus itens.`,
+  ]);
+}
+
+export function orderStatusEmail(data: OrderEmailData & { statusLabel: string; detail: string | null }): MailMessage {
+  return orderEmail(data, `Pedido ${data.orderNumber}: ${data.statusLabel}`, [
+    `O pedido ${data.orderNumber} mudou para: ${data.statusLabel}.`,
+    ...(data.detail ? [data.detail] : []),
+  ]);
+}

@@ -38,6 +38,8 @@ export const coupons = pgTable(
     startsAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     endsAt: timestamp({ withTimezone: true }),
     usageLimit: integer(),
+    /** Orders per customer account (E5); null = unlimited. */
+    perCustomerLimit: integer(),
     timesRedeemed: integer().notNull().default(0),
     isActive: boolean().notNull().default(true),
     /** Demonstration content (seed). Never a real commercial offer. */
@@ -55,6 +57,7 @@ export const coupons = pgTable(
     check("coupons_min_subtotal_non_negative", sql`${table.minSubtotalMinor} >= 0`),
     check("coupons_period", sql`${table.endsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`),
     check("coupons_usage", sql`${table.timesRedeemed} >= 0 AND (${table.usageLimit} IS NULL OR ${table.usageLimit} > 0)`),
+    check("coupons_per_customer_limit_positive", sql`${table.perCustomerLimit} IS NULL OR ${table.perCustomerLimit} > 0`),
     check("coupons_description_length", sql`length(trim(${table.description})) BETWEEN 1 AND 200`),
   ],
 );

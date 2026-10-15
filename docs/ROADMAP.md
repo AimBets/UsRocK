@@ -11,7 +11,7 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 ## Fase 1 — Loja e design
 - [~] Homepage responsiva implementada e validada por lint, TypeScript, build e resposta HTTP local; inspeção visual em navegador e aprovação final pendentes.
 - [~] Busca, catálogo, filtros, coleções e páginas de produto: API do backend implementada e testada (E2, catálogo demonstrativo); páginas do frontend pendentes.
-- [~] Variações/tamanhos, carrinho e checkout: variações (E2) e sacola/cupons/favoritos no backend (E4) implementados e testados; integração da UI E4 e checkout (E5) pendentes.
+- [~] Variações/tamanhos, carrinho e checkout: variações (E2), sacola/cupons/favoritos (E4) e checkout/pedidos/endereços (E5) implementados e testados no backend; telas E4/E5 do frontend pendentes.
 
 ## Fase 2 — Operação
 - [~] Login, permissões e área do cliente: API de contas/sessão/permissões implementada e testada (E3); telas do frontend pendentes.
@@ -24,10 +24,10 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 - [ ] Produtos vinculados, SEO, conversões e teste end-to-end.
 
 ## Fase 4 — Integrações
-- [ ] Mercado Pago (sandbox, depois homologação).
-- [ ] SuperFrete (cotação, geração de etiqueta e rastreio conforme APIs reais).
-- [ ] WhatsApp via integração autorizada e opt-in.
-- [ ] Email transacional via provedor adequado; Gmail quando pertinente e permitido.
+- [~] Mercado Pago: Checkout Pro implementado (preferência, webhook assinado, consulta à API, idempotência) e testado contra servidor local; sandbox real pendente de credenciais; homologação depois.
+- [~] SuperFrete: cotação, etiqueta pendente, consulta e webhook implementados conforme a documentação oficial e testados contra servidor local; sandbox real pendente de credenciais; pagamento de etiqueta e NF-e manuais.
+- [ ] WhatsApp via integração autorizada e opt-in (E5 deixou só a interface e o canal desligado; nenhum envio).
+- [~] Email transacional: fila com novas tentativas e modelos de pedido implementados e verificados no Mailpit (E5); provedor de produção a definir.
 
 ## Fase 5 — Produção
 - [ ] Acessibilidade, segurança, desempenho, privacidade e testes.
@@ -42,4 +42,5 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 - E1 concluída localmente; detalhes e testes em `docs/HANDOFF_CLAUDE.md`.
 - E2 (catálogo público somente leitura + seed demonstrativo) concluída localmente em 2026-10-13; sem commit até autorização.
 - E3 (contas, sessão por cookie, permissões, recuperação de senha por e-mail, consentimentos, comando de admin) concluída localmente em 2026-10-13; sem commit até autorização.
-- E4 (sacola de visitante/conta com junção no login, favoritos, cupons, campanhas com admin mínimo, newsletter com dupla confirmação) concluída localmente no backend em 2026-10-15; sem commit até autorização. Integração do frontend pendente.
+- E4 (sacola de visitante/conta com junção no login, favoritos, cupons, campanhas com admin mínimo, newsletter com dupla confirmação) concluída localmente no backend em 2026-10-15; integrada à `main` pelo PR #5.
+- E5 (endereços, frete SuperFrete, checkout idempotente com reserva de estoque, pedidos, Mercado Pago Checkout Pro em sandbox, webhooks assinados, e-mails por fila, admin mínimo de pedidos) concluída localmente no backend em 2026-10-15, testada contra servidores locais; sandboxes reais pendentes de credenciais; sem commit até autorização.
