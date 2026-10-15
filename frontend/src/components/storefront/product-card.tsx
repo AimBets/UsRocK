@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Heart, Plus } from "lucide-react";
 import type { Product } from "@/types/catalog";
 import { formatMoney, formatPriceRange } from "@/lib/format";
+import { toCommerceSnapshot } from "@/types/commerce";
 import { useStorefront } from "./storefront-provider";
 
 export function ProductCard({ product }: { product: Product }) {
@@ -13,6 +14,7 @@ export function ProductCard({ product }: { product: Product }) {
   const [selectedVariantId, setSelectedVariantId] = useState(firstAvailable?.id ?? "");
   const [message, setMessage] = useState("");
   const { addToCart, favoriteIds, toggleFavorite } = useStorefront();
+  const snapshot = toCommerceSnapshot(product);
   const isFavorite = favoriteIds.has(product.id);
   const selectedVariant = product.variants.find((variant) => variant.id === selectedVariantId);
   const image = product.primaryMedia;
@@ -20,8 +22,8 @@ export function ProductCard({ product }: { product: Product }) {
 
   function addProduct() {
     if (!selectedVariant || selectedVariant.availability === "out_of_stock") return;
-    addToCart(product.id, selectedVariant.id);
-    setMessage(`Tamanho ${selectedVariant.size} selecionado na sacola demonstrativa.`);
+    addToCart(snapshot, selectedVariant.id);
+    setMessage(`Tamanho ${selectedVariant.size} adicionado à prévia da sacola.`);
   }
 
   return (
@@ -37,7 +39,7 @@ export function ProductCard({ product }: { product: Product }) {
           aria-label={isFavorite ? `Remover ${product.name} dos favoritos` : `Favoritar ${product.name}`}
           aria-pressed={isFavorite}
           className={`favorite-button ${isFavorite ? "is-active" : ""}`}
-          onClick={() => toggleFavorite(product.id)}
+          onClick={() => toggleFavorite(snapshot)}
           type="button"
         >
           <Heart fill={isFavorite ? "currentColor" : "none"} size={18} />

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { AnnouncementBar } from "@/components/storefront/announcement-bar";
+import { CatalogState } from "@/components/storefront/catalog-state";
 import { Footer } from "@/components/storefront/footer";
 import { Header } from "@/components/storefront/header";
 import { ProductCard } from "@/components/storefront/product-card";
@@ -15,12 +16,29 @@ export const dynamic = "force-dynamic";
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  let product: ProductDetail;
+  let product: ProductDetail | null = null;
+  let loadError = "Não foi possível carregar este produto agora.";
   try {
     product = await getProduct(slug);
   } catch (error) {
     if (error instanceof ApiError && error.code === "NOT_FOUND") notFound();
-    throw error;
+    if (error instanceof ApiError) loadError = error.message;
+  }
+
+  if (!product) {
+    return (
+      <div>
+        <AnnouncementBar />
+        <Header />
+        <main id="conteudo" className="min-h-[70vh] bg-stage py-16 text-white">
+          <div className="shell">
+            <Link className="text-link text-stone-400" href="/catalogo"><ArrowLeft size={15} /> Voltar ao catálogo</Link>
+            <CatalogState kind="error" message={loadError} />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   const related = product.category

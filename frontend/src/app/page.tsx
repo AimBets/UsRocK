@@ -6,6 +6,7 @@ import { Header } from "@/components/storefront/header";
 import { Hero } from "@/components/storefront/hero";
 import { ProductCard } from "@/components/storefront/product-card";
 import { CatalogState } from "@/components/storefront/catalog-state";
+import { CampaignPanel } from "@/components/commerce/campaign-panel";
 import { getCollections, getProducts } from "@/lib/api/catalog";
 
 export const dynamic = "force-dynamic";
@@ -79,6 +80,8 @@ export default async function Home() {
             {!catalogUnavailable && products.length > 0 && products.length <= 3 && <CatalogState kind="empty" message="Não há outros produtos publicados nesta seleção." />}
           </div>
         </section>
+
+        <CampaignPanel />
 
         <section className="festival-section" id="festivais" aria-labelledby="festival-title">
           <div className="festival-grid" aria-hidden="true" />

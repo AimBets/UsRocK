@@ -15,7 +15,7 @@
 - Claude: `backend/`, contratos de APIs e integrações.
 - Ambos: leitura dos handoffs; registro de suas tarefas; documentação central reconciliada a cada integração.
 
-## Estado atual — catálogo e contas E1–E3 integrados; frontend de autenticação em revisão
+## Estado atual — catálogo E1–E3 recuperado e validado; prévia frontend E4 preservada
 - [x] Definição de escopo e divisão de responsabilidades.
 - [x] Documentos iniciais de colaboração criados (após serem inseridos no repositório).
 - [~] Base do frontend gerada e executável localmente; aprovação da stack completa e infraestrutura compartilhada pendentes.
@@ -23,15 +23,17 @@
 - [x] Backend criado e executando localmente (E1: fundação; lint, typecheck, build, 40 testes unitários e 4 de integração passaram em 2026-10-13; sem commit até autorização).
 - [x] Integração frontend/backend E1/E2 validada localmente: rewrite, catálogo, filtros, produto e estados consultando PostgreSQL via Fastify.
 - [~] Autenticação E3 implementada e validada ponta a ponta no frontend; revisão e commit/PR das correções finais pendentes.
+- [~] Prévia frontend E4 implementada para sacola, favoritos, campanhas, cupom e newsletter; estado local testado, mas integração com API e inspeção visual em navegador permanecem pendentes.
+- [x] Regressão de vitrines investigada e recuperada: Fastify offline era a causa; seis produtos, detalhes e imagens foram revalidados de PostgreSQL até o build Next, sem mocks e sem alteração no backend.
 - [ ] Admin e CMS implementados.
 - [ ] Editor de landing pages implementado.
 - [ ] Integrações comerciais implementadas e testadas em sandbox.
 - [ ] Segurança, QA, homologação e deploy concluídos.
 
 ## Próxima ação prioritária
-1. Revisar a integração E3 do frontend e autorizar commit/PR da branch `codex/autenticacao-e3` quando aprovada.
-2. Providenciar e aprovar Termos de Uso e Política de Privacidade definitivos; definir o provedor transacional de produção antes de publicar contas reais.
-3. Adicionar testes automatizados de interação/acessibilidade para contas e continuar a inspeção visual da homepage nos breakpoints pendentes. E4 só deve começar após contrato e autorização específicos.
+1. Revisar a branch `codex/e4-commerce` e executar `npm.cmd run test:catalog-live` com PostgreSQL, Fastify e Next ativos antes de autorizar commit/PR.
+2. Completar QA interativo da E4 em 390, 768, 1024 e 1440 px; catálogo e detalhe já tiveram inspeção visual desktop e o hero foi inspecionado em desktop/mobile.
+3. Aprovar e implementar o contrato backend E4 antes de ativar persistência de servidor, cupons, campanhas, newsletter ou sincronização de favoritos; revalidar preço, estoque e totais exclusivamente no backend.
 
 ## Registro das integrações
 | Funcionalidade | Frontend | Backend | Estado da integração |
@@ -39,12 +41,32 @@
 | Saúde da API | Rewrite validado | Implementado (`/api/v1/health`) | Next → Fastify → PostgreSQL comprovado localmente |
 | Catálogo | Implementado e validado (`/`, `/catalogo`, `/produto/[slug]`) | Implementado e testado (E2: `/products`, `/products/{slug}`, `/collections`, `/categories`) | Integrado localmente; seed permanece `isDemo` |
 | Login | Implementado e validado (`/entrar`, `/cadastro`, `/conta`, recuperação e redefinição) | Implementado e testado (E3: cadastro, login, logout, `/me`, troca e recuperação de senha) | Integrado ponta a ponta via rewrite; revisão/PR do frontend pendentes |
+| Carrinho e favoritos | Prévia local testada (`/carrinho`, drawer e `/favoritos`) | Pendente (E4) | Sem integração; preço, estoque, descontos e totais não são autoritativos no cliente |
 | Frete | Pendente | Pendente | Não iniciado |
 | Checkout | Pendente | Pendente | Não iniciado |
 | Landing pages | Pendente | Pendente | Não iniciado |
 
 ## Alterações recentes
 - Bootstrap: estrutura inicial e documentos criados. Nenhuma integração funcional afirmada.
+
+## Registro factual — Correção da regressão de catálogo E4, 2026-10-15 (Codex)
+- Remoto `AimBets/UsRocK` e branch `codex/e4-commerce` confirmados. A comparação com `HEAD` mostrou que a E4 preservou cliente HTTP, rewrite, filtros e consultas do catálogo; a homepage recebeu apenas o painel de campanha entre seções comerciais.
+- Causa raiz: Fastify estava desligado. O log do Next mostrou `ECONNREFUSED 127.0.0.1:3333`; PostgreSQL permaneceu saudável com 6 produtos, 26 variantes e 6 mídias. Nenhum mock foi introduzido.
+- Após migração/seed idempotentes e inicialização dos serviços, API direta e rewrite retornaram os mesmos seis produtos. Homepage e catálogo renderizaram os seis; os seis detalhes e as seis imagens responderam 200.
+- `/produto/[slug]` passou a mostrar indisponibilidade recuperável quando a API cai, mantendo `notFound()` somente para `NOT_FOUND`. Homepage e catálogo já mostravam estados de erro com “Tentar novamente”.
+- Adicionado check ao vivo sem mocks para API, rewrite, homepage, catálogo, detalhes, imagens, carrinho e favoritos. Testes locais de comércio subiram para 6 e cobrem restauração/remoção/preservação.
+- `turbopack.root` foi fixado no diretório do frontend para impedir inferência ambígua quando existir lockfile paralelo na raiz. O lockfile não rastreado não foi apagado.
+- Validação final: OpenAPI check, ESLint, TypeScript, 6/6 testes, build e teste de catálogo ao vivo passaram. Edge headless confirmou visualmente os seis cards no catálogo, imagens no detalhe e hero desktop/mobile. E4 permaneceu funcional; nenhum arquivo de backend foi modificado.
+- Próximo passo exato: manter os três serviços ativos e executar o check ao vivo antes de revisão; depois concluir QA interativo responsivo e solicitar autorização antes de qualquer commit/push/merge.
+
+## Registro factual — Prévia frontend E4, 2026-10-15 (Codex)
+- Branch `codex/e4-commerce` confirmada, fora de `main`; nenhum arquivo de `backend/` foi alterado.
+- Implementadas sacola local por variante com drawer e página de revisão, quantidades, remoção e subtotal em centavos; favoritos persistentes no navegador com página própria e contador no cabeçalho.
+- Hidratação do `localStorage` valida snapshots e descarta dados incompletos/indisponíveis; quantidade local limitada a 10. Persistência, preços e estoque permanecem sinalizados como prévia, nunca como resultado autoritativo.
+- Campanhas, cupons e newsletter receberam interfaces honestas que não publicam campanha, aplicam desconto ou enviam dados sem API. Checkout permanece desabilitado até E4/E5.
+- Responsividade ajustada para sacola em coluna única abaixo de 1024 px e favoritos em 1/2/3 colunas. Inspeção visual não foi possível porque nenhum navegador estava disponível no ambiente; o bloqueio foi registrado, sem declarar QA visual concluído.
+- Verificações: 5 testes de estado passaram; OpenAPI check, ESLint, TypeScript e build passaram; `/carrinho` e `/favoritos` responderam HTTP 200 no servidor de produção local.
+- Próximo passo exato: realizar QA visual/interativo em 390, 768, 1024 e 1440 px; após aprovação do contrato E4, integrar carrinho/favoritos/campanhas/cupons/newsletter ao backend e testar a junção no login.
 
 ## Registro factual — Frontend de autenticação E3, 2026-10-14 (Codex)
 - Branch `codex/autenticacao-e3` confirmada, fora de `main`. Nenhum arquivo em `backend/` foi alterado.

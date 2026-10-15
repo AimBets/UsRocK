@@ -1,6 +1,6 @@
 # Design System — UsRock
 
-**Responsável:** Codex. **Estado:** tokens e padrões refinados aplicados à homepage; validação visual por navegador segue pendente porque não há browser disponível neste ambiente.
+**Responsável:** Codex. **Estado:** tokens e padrões refinados aplicados; Edge headless validou catálogo, detalhe de produto e hero desktop/mobile em 2026-10-15. QA interativo completo nos breakpoints-alvo permanece pendente.
 
 ## Direção
 - Marca: UsRock; atitude rock/metal, navegação limpa, apresentação editorial e acabamento premium.
@@ -28,6 +28,14 @@ Escalas: container até 88rem; margens laterais de 1.25rem em telas pequenas e 2
 - Loja: header, megamenu, busca, navegação mobile, cards de produto, variações, badges, galeria, carrinho, checkout, filtros.
 - Admin: sidebar, tabelas, dashboards, formulários, filtros, estados vazios, validação, toasts, diálogos.
 - Landing pages: editor em blocos, painel de propriedades, reordenação, prévia desktop/mobile, biblioteca de templates, versão/publicação.
+
+## Padrões da prévia de comércio E4
+
+- Sacola usa drawer para revisão rápida e rota dedicada para edição ampla, com hierarquia consistente entre produto, variante, quantidade e subtotal.
+- Favoritos usam 1, 2 e 3 colunas conforme o espaço disponível; a sacola só divide conteúdo e resumo a partir de 1024 px para evitar compressão em tablets.
+- Estados locais distinguem carregamento, vazio, falha de persistência e dados demonstrativos. Checkout, cupom, campanha e newsletter não aparentam estar ativos sem API.
+- Preço, estoque, desconto, frete e total autoritativos pertencem ao backend; o cliente identifica qualquer subtotal local como estimativa.
+- A inspeção visual inicial dos novos componentes ficou bloqueada; na auditoria posterior de 2026-10-15, Edge headless confirmou catálogo e detalhe, enquanto carrinho/favoritos e os breakpoints intermediários ainda requerem QA interativo.
 
 ## Padrões aplicados na homepage
 
