@@ -60,7 +60,9 @@ export const errors = {
   unauthenticated: (message = "Autenticação necessária.") => new AppError(401, "UNAUTHENTICATED", message),
   forbidden: (message = "Acesso não permitido.") => new AppError(403, "FORBIDDEN", message),
   notFound: (message = "Recurso não encontrado.") => new AppError(404, "NOT_FOUND", message),
-  conflict: (message = "Conflito com o estado atual do recurso.") => new AppError(409, "CONFLICT", message),
+  /** `details` carries a stable business reason (e.g. `insufficient_stock`) for the UI to branch on. */
+  conflict: (message = "Conflito com o estado atual do recurso.", details?: ErrorDetail[]) =>
+    new AppError(409, "CONFLICT", message, details),
   preconditionFailed: (message = "O recurso foi alterado por outra requisição.") =>
     new AppError(412, "PRECONDITION_FAILED", message),
   rateLimited: (message = "Muitas requisições. Tente novamente em instantes.") =>

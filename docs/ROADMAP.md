@@ -11,7 +11,7 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 ## Fase 1 — Loja e design
 - [~] Homepage responsiva implementada e validada por lint, TypeScript, build e resposta HTTP local; inspeção visual em navegador e aprovação final pendentes.
 - [~] Busca, catálogo, filtros, coleções e páginas de produto: API do backend implementada e testada (E2, catálogo demonstrativo); páginas do frontend pendentes.
-- [ ] Variações/tamanhos, carrinho e checkout (fluxo de testes).
+- [~] Variações/tamanhos, carrinho e checkout: variações (E2) e sacola/cupons/favoritos no backend (E4) implementados e testados; integração da UI E4 e checkout (E5) pendentes.
 
 ## Fase 2 — Operação
 - [~] Login, permissões e área do cliente: API de contas/sessão/permissões implementada e testada (E3); telas do frontend pendentes.
@@ -42,3 +42,4 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 - E1 concluída localmente; detalhes e testes em `docs/HANDOFF_CLAUDE.md`.
 - E2 (catálogo público somente leitura + seed demonstrativo) concluída localmente em 2026-10-13; sem commit até autorização.
 - E3 (contas, sessão por cookie, permissões, recuperação de senha por e-mail, consentimentos, comando de admin) concluída localmente em 2026-10-13; sem commit até autorização.
+- E4 (sacola de visitante/conta com junção no login, favoritos, cupons, campanhas com admin mínimo, newsletter com dupla confirmação) concluída localmente no backend em 2026-10-15; sem commit até autorização. Integração do frontend pendente.

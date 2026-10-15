@@ -31,3 +31,10 @@ export function multiplyMoney(unit: Money, quantity: number): Money {
   }
   return brl(unit.amountMinor * quantity);
 }
+
+const brlFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+/** Display formatting for server-generated messages, e.g. `R$ 129,90`. */
+export function formatBrl(amountMinor: number): string {
+  return brlFormatter.format(amountMinor / 100).replace(/\u00a0/g, " ");
+}

@@ -32,6 +32,11 @@ export const openApiPlugin = fp<OpenApiOptions>(
           { name: "system", description: "Saúde e metadados do serviço" },
           { name: "catalog", description: "Catálogo público: produtos, coleções e categorias" },
           { name: "accounts", description: "Cadastro, sessão, senha e usuário atual" },
+          { name: "cart", description: "Sacola de visitante e de cliente; preços, estoque, cupom e totais calculados no servidor" },
+          { name: "favorites", description: "Favoritos da conta" },
+          { name: "marketing", description: "Campanhas públicas vigentes" },
+          { name: "newsletter", description: "Inscrição com dupla confirmação e descadastro" },
+          { name: "admin", description: "Administração (exige permissão)" },
         ],
         components: {
           securitySchemes: {

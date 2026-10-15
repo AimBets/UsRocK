@@ -9,3 +9,7 @@
 // - versioned JSON documents (landing pages) stored as immutable jsonb rows.
 export * from "../../modules/catalog/catalog.schema.js";
 export * from "../../modules/accounts/accounts.schema.js";
+export * from "../../modules/marketing/marketing.schema.js";
+export * from "../../modules/cart/cart.schema.js";
+export * from "../../modules/favorites/favorites.schema.js";
+export * from "../../modules/newsletter/newsletter.schema.js";

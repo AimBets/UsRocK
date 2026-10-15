@@ -12,6 +12,7 @@ import {
   products,
   productVariants,
 } from "../modules/catalog/catalog.schema.js";
+import { campaigns, coupons } from "../modules/marketing/marketing.schema.js";
 import { createDatabase, type Db } from "./client.js";
 import { demoCategory, demoCollections, demoImageSize, demoProducts, demoSku } from "./seed-data/demo-catalog.js";
 
@@ -130,6 +131,52 @@ export async function seedDemoCatalog(db: Db): Promise<SeedResult> {
   });
 }
 
+/** Demonstration coupon and campaign so the storefront can render the E4 campaign slot locally. */
+export const DEMO_COUPON_CODE = "DEMO10";
+export const DEMO_CAMPAIGN_SLUG = "demo-ritual-drop";
+
+/** Idempotent; like the catalog seed, it only ever touches rows flagged `is_demo`. */
+export async function seedDemoMarketing(db: Db): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [collection] = await tx.select({ id: collections.id }).from(collections).where(eq(collections.slug, "ritual-collection"));
+    const couponValues = {
+      code: DEMO_COUPON_CODE,
+      description: "Cupom demonstrativo: 10% na Ritual Collection (sem valor comercial).",
+      discountType: "percentage" as const,
+      percentOff: 10,
+      collectionId: collection?.id ?? null,
+      startsAt: new Date(NEWEST_PUBLISHED_AT),
+      isActive: true,
+      isDemo: true,
+    };
+    const [coupon] = await tx
+      .insert(coupons)
+      .values(couponValues)
+      .onConflictDoUpdate({ target: coupons.code, set: couponValues, setWhere: eq(coupons.isDemo, true) })
+      .returning({ id: coupons.id });
+
+    const campaignValues = {
+      slug: DEMO_CAMPAIGN_SLUG,
+      placement: "home_panel" as const,
+      status: "published" as const,
+      title: "Ritual Drop (demonstração)",
+      subtitle: "Campanha demonstrativa para validar vigência, cupom e destino. Não representa oferta real.",
+      ctaLabel: "Ver Ritual Collection",
+      ctaHref: "/catalogo?collection=ritual-collection",
+      collectionId: collection?.id ?? null,
+      couponId: coupon?.id ?? null,
+      priority: 0,
+      startsAt: new Date(NEWEST_PUBLISHED_AT),
+      endsAt: null,
+      isDemo: true,
+    };
+    await tx
+      .insert(campaigns)
+      .values(campaignValues)
+      .onConflictDoUpdate({ target: campaigns.slug, set: campaignValues, setWhere: eq(campaigns.isDemo, true) });
+  });
+}
+
 const isEntryPoint = process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isEntryPoint) {
@@ -145,11 +192,13 @@ if (isEntryPoint) {
   }
   const database = createDatabase(url.data, { poolMax: 1 });
   seedDemoCatalog(database.db)
-    .then((result) => {
+    .then(async (result) => {
+      await seedDemoMarketing(database.db);
       console.log(`Seed demonstrativo aplicado: ${result.products} produtos, ${result.stockInitialised} estoques iniciados.`);
       if (result.skippedRealProducts.length > 0) {
         console.warn(`Ignorados (produto real com o mesmo slug): ${result.skippedRealProducts.join(", ")}`);
       }
+      console.log(`Marketing demonstrativo aplicado: cupom ${DEMO_COUPON_CODE} e campanha ${DEMO_CAMPAIGN_SLUG}.`);
     })
     .catch((error: unknown) => {
       console.error("Falha no seed:", error instanceof Error ? error.message : "erro desconhecido");

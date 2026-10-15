@@ -27,3 +27,33 @@ export function passwordResetEmail(input: { to: string; name: string; resetUrl: 
 <p>Se você não fez este pedido, ignore este e-mail: sua senha atual continua válida.</p>`,
   };
 }
+
+export function newsletterConfirmationEmail(input: {
+  to: string;
+  confirmUrl: string;
+  unsubscribeUrl: string;
+  expiresInHours: number;
+}): MailMessage {
+  const confirmUrl = escapeHtml(input.confirmUrl);
+  const unsubscribeUrl = escapeHtml(input.unsubscribeUrl);
+  return {
+    to: input.to,
+    subject: "Confirme sua inscrição na newsletter — UsRock",
+    text: [
+      "Olá!",
+      "",
+      "Recebemos um pedido para inscrever este e-mail na newsletter da UsRock (lançamentos, drops e campanhas).",
+      `Para confirmar, acesse o link abaixo (válido por ${input.expiresInHours} horas):`,
+      "",
+      input.confirmUrl,
+      "",
+      "Se você não fez este pedido, ignore este e-mail: sem a confirmação, nada será enviado.",
+      `Para cancelar a qualquer momento: ${input.unsubscribeUrl}`,
+    ].join("\n"),
+    html: `<p>Olá!</p>
+<p>Recebemos um pedido para inscrever este e-mail na newsletter da UsRock (lançamentos, drops e campanhas).</p>
+<p><a href="${confirmUrl}">Confirmar inscrição</a></p>
+<p>O link é válido por ${input.expiresInHours} horas. Se você não fez este pedido, ignore este e-mail: sem a confirmação, nada será enviado.</p>
+<p><a href="${unsubscribeUrl}">Cancelar inscrição</a></p>`,
+  };
+}
