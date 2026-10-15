@@ -7,8 +7,14 @@ import { formatMoney } from "@/lib/format";
 import type { CartLine } from "@/types/commerce";
 import { QuantityControl } from "./quantity-control";
 
-export function CartLineItem({ line, compact = false, onQuantity, onRemove }: { line: CartLine; compact?: boolean; onQuantity: (value: number) => void; onRemove: () => void }) {
-  const lineTotal = { amountMinor: line.variant.price.amountMinor * line.quantity, currencyCode: line.variant.price.currencyCode };
+const issueLabels = {
+  unavailable: "Item indisponível para venda.",
+  out_of_stock: "Sem estoque no momento.",
+  insufficient_stock: "Quantidade ajustável ao estoque atual.",
+  price_changed: "O preço mudou desde sua última alteração.",
+} as const;
+
+export function CartLineItem({ line, compact = false, disabled = false, onQuantity, onRemove }: { line: CartLine; compact?: boolean; disabled?: boolean; onQuantity: (value: number) => void; onRemove: () => void }) {
   return (
     <article className={`cart-line ${compact ? "is-compact" : ""}`}>
       <Link className="cart-line-image" href={`/produto/${line.product.slug}`}>
@@ -21,13 +27,14 @@ export function CartLineItem({ line, compact = false, onQuantity, onRemove }: { 
           {line.product.isDemo && <span className="commerce-demo-label">Catálogo demonstrativo</span>}
         </div>
         <div className="cart-line-actions">
-          <QuantityControl label={`Quantidade de ${line.product.name}`} onChange={onQuantity} quantity={line.quantity} />
-          <button className="remove-line" onClick={onRemove} type="button"><Trash2 size={15} /> Remover</button>
+          <QuantityControl disabled={disabled} label={`Quantidade de ${line.product.name}`} maxQuantity={line.maxQuantity} onChange={onQuantity} quantity={line.quantity} />
+          <button className="remove-line" disabled={disabled} onClick={onRemove} type="button"><Trash2 size={15} /> Remover</button>
         </div>
+        {line.issues.map((issue) => <p className="cart-item-issue" key={issue}>{issueLabels[issue]}{issue === "price_changed" && line.previousUnitPrice ? ` Antes: ${formatMoney(line.previousUnitPrice)}.` : ""}</p>)}
       </div>
       <div className="cart-line-price">
-        <strong>{formatMoney(lineTotal)}</strong>
-        {line.quantity > 1 && <span>{formatMoney(line.variant.price)} cada</span>}
+        <strong>{formatMoney(line.lineTotal)}</strong>
+        {line.quantity > 1 && <span>{formatMoney(line.unitPrice)} cada</span>}
       </div>
     </article>
   );

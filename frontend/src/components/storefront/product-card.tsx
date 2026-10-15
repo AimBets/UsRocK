@@ -22,8 +22,10 @@ export function ProductCard({ product }: { product: Product }) {
 
   function addProduct() {
     if (!selectedVariant || selectedVariant.availability === "out_of_stock") return;
-    addToCart(snapshot, selectedVariant.id);
-    setMessage(`Tamanho ${selectedVariant.size} adicionado à prévia da sacola.`);
+    void addToCart(snapshot, selectedVariant.id).then(
+      () => setMessage(`Tamanho ${selectedVariant.size} adicionado à sacola.`),
+      () => setMessage("Não foi possível adicionar este tamanho. Confira a sacola ou tente novamente."),
+    );
   }
 
   return (
@@ -39,7 +41,7 @@ export function ProductCard({ product }: { product: Product }) {
           aria-label={isFavorite ? `Remover ${product.name} dos favoritos` : `Favoritar ${product.name}`}
           aria-pressed={isFavorite}
           className={`favorite-button ${isFavorite ? "is-active" : ""}`}
-          onClick={() => toggleFavorite(snapshot)}
+          onClick={() => void toggleFavorite(snapshot).catch(() => setMessage("Não foi possível atualizar os favoritos agora."))}
           type="button"
         >
           <Heart fill={isFavorite ? "currentColor" : "none"} size={18} />

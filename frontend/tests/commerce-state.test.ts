@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateLocalCartTotals, commerceReducer, initialCommerceState, MAX_PREVIEW_QUANTITY, parseStoredCommerce } from "../src/lib/commerce-state.ts";
+import { calculateLocalCartTotals, commerceReducer, createCartMigrationTargets, initialCommerceState, MAX_PREVIEW_QUANTITY, parseStoredCommerce, remainingCartImport } from "../src/lib/commerce-state.ts";
 import type { CommerceProductSnapshot } from "../src/types/commerce.ts";
 
 const product: CommerceProductSnapshot = {
@@ -17,6 +17,15 @@ test("adiciona a variante e acumula quantidade sem ultrapassar o limite local", 
   for (let index = 0; index < 20; index += 1) state = commerceReducer(state, { type: "add", product, variantId: "variant-1" });
   assert.equal(state.cartLines.length, 1);
   assert.equal(state.cartLines[0].quantity, MAX_PREVIEW_QUANTITY);
+});
+
+test("migração envia somente o restante e não duplica após resposta perdida", () => {
+  const local = commerceReducer(initialCommerceState, { type: "add", product, variantId: "variant-1" }).cartLines;
+  const server = [{ variant: { id: "variant-1" }, quantity: 2 }];
+  const targets = createCartMigrationTargets(local, server);
+  assert.deepEqual(targets, { "variant-1": 3 });
+  assert.deepEqual(remainingCartImport(targets, server), [{ variantId: "variant-1", quantity: 1 }]);
+  assert.deepEqual(remainingCartImport(targets, [{ variant: { id: "variant-1" }, quantity: 3 }]), []);
 });
 
 test("calcula quantidade e subtotal em centavos sem usar ponto flutuante", () => {

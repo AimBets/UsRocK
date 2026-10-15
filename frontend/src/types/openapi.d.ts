@@ -121,6 +121,101 @@ export interface components {
     AcceptedResponse: {
       "message": string;
     };
+    Cart: {
+      "id": string | null;
+      "owner": "guest" | "customer";
+      "items": Array<components["schemas"]["CartItem"]>;
+      "itemCount": number;
+      "coupon": components["schemas"]["CartCoupon"] | null;
+      "totals": {
+      "subtotal": components["schemas"]["Money"];
+      "discount": components["schemas"]["Money"];
+      "shipping": null;
+      "total": components["schemas"]["Money"];
+    };
+      "hasIssues": boolean;
+      "updatedAt": string | null;
+    };
+    CartItem: {
+      "id": string;
+      "quantity": number;
+      "maxQuantity": number;
+      "product": {
+      "id": string;
+      "slug": string;
+      "name": string;
+      "isDemo": boolean;
+      "image": {
+      "url": string;
+      "alt": string;
+    } | null;
+    };
+      "variant": {
+      "id": string;
+      "sku": string;
+      "size": string;
+      "color": string | null;
+      "availability": components["schemas"]["Availability"];
+    };
+      "unitPrice": components["schemas"]["Money"];
+      "compareAtUnitPrice": components["schemas"]["Money"] | null;
+      "previousUnitPrice": components["schemas"]["Money"] | null;
+      "lineTotal": components["schemas"]["Money"];
+      "issues": Array<components["schemas"]["CartItemIssue"]>;
+    };
+    CartCoupon: {
+      "code": string;
+      "description": string;
+      "status": "applied" | "not_applicable";
+      "issue": components["schemas"]["CouponIssue"] | null;
+      "discount": components["schemas"]["Money"];
+      "minimumSubtotal": components["schemas"]["Money"] | null;
+    };
+    CartItemIssue: "unavailable" | "out_of_stock" | "insufficient_stock" | "price_changed";
+    CouponIssue: "coupon_invalid" | "coupon_expired" | "coupon_usage_exhausted" | "coupon_requires_account" | "coupon_minimum_not_met" | "coupon_not_applicable";
+    CartImportResponse: {
+      "cart": components["schemas"]["Cart"];
+      "skipped": Array<{
+      "variantId": string;
+      "reason": "unavailable" | "cart_full";
+    }>;
+    };
+    Favorite: {
+      "product": components["schemas"]["ProductSummary"];
+      "addedAt": string;
+    };
+    FavoriteList: {
+      "data": Array<components["schemas"]["Favorite"]>;
+    };
+    Campaign: {
+      "id": string;
+      "slug": string;
+      "placement": "announcement_bar" | "home_hero" | "home_panel";
+      "title": string;
+      "subtitle": string | null;
+      "cta": {
+      "label": string;
+      "href": string;
+    } | null;
+      "media": {
+      "url": string;
+      "alt": string;
+    } | null;
+      "collection": components["schemas"]["CollectionRef"] | null;
+      "couponCode": string | null;
+      "startsAt": string;
+      "endsAt": string | null;
+      "isDemo": boolean;
+    };
+    ActiveCampaigns: {
+      "data": Array<components["schemas"]["Campaign"]>;
+    };
+    NewsletterConfirmed: {
+      "status": "confirmed";
+    };
+    NewsletterUnsubscribed: {
+      "status": "unsubscribed";
+    };
   };
 }
 
@@ -146,5 +241,38 @@ export interface authRequests {
   changePassword: {
       "currentPassword": string;
       "newPassword": string;
+    };
+}
+
+export interface commerceRequests {
+  addCartItem: {
+      "variantId": string;
+      "quantity"?: number;
+    };
+  updateCartItem: {
+      "quantity": number;
+    };
+  importCart: {
+      "items": Array<{
+      "variantId": string;
+      "quantity": number;
+    }>;
+    };
+  applyCoupon: {
+      "code": string;
+    };
+  importFavorites: {
+      "productIds": Array<string>;
+    };
+  subscribeNewsletter: {
+      "email": string;
+      "consent": true;
+      "source"?: "footer" | "home" | "landing_page" | "account";
+    };
+  confirmNewsletter: {
+      "token": string;
+    };
+  unsubscribeNewsletter: {
+      "token": string;
     };
 }
