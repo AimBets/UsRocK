@@ -10,9 +10,13 @@ import { accountsRoutes } from "./modules/accounts/accounts.routes.js";
 import { createDbSessionResolver } from "./modules/accounts/sessions.js";
 import { authPlugin } from "./modules/auth/auth.plugin.js";
 import type { SessionResolver } from "./modules/auth/auth.types.js";
+import { cartRoutes } from "./modules/cart/cart.routes.js";
 import { catalogRoutes } from "./modules/catalog/catalog.routes.js";
+import { favoritesRoutes } from "./modules/favorites/favorites.routes.js";
 import { healthRoutes, type HealthCheck } from "./modules/health/health.routes.js";
 import { createSmtpMailer, type Mailer } from "./modules/mail/mailer.js";
+import { campaignRoutes, marketingAdminRoutes } from "./modules/marketing/marketing.routes.js";
+import { newsletterRoutes } from "./modules/newsletter/newsletter.routes.js";
 import { errorHandlerPlugin } from "./plugins/error-handler.js";
 import { openApiPlugin } from "./plugins/openapi.js";
 import { securityPlugin } from "./plugins/security.js";
@@ -49,6 +53,7 @@ function generateRequestId(request: IncomingMessage): string {
 
 export async function buildApp({ env, database, healthChecks, sessionResolver, mailer, logStream }: AppDependencies) {
   const checks = healthChecks ?? [{ name: "database", check: () => database.ping() }];
+  const mail = mailer ?? createSmtpMailer(env);
   const app = Fastify({
     logger: buildLoggerOptions(env, logStream),
     genReqId: generateRequestId,
@@ -90,8 +95,13 @@ export async function buildApp({ env, database, healthChecks, sessionResolver, m
     async (api) => {
       await api.register(healthRoutes, { checks, version: env.APP_VERSION });
       await api.register(catalogRoutes, { db: database.db });
-      await api.register(accountsRoutes, { db: database.db, env, mailer: mailer ?? createSmtpMailer(env) });
-      // Further modules (cart, orders, ...) are registered here in later phases.
+      await api.register(accountsRoutes, { db: database.db, env, mailer: mail });
+      await api.register(cartRoutes, { db: database.db, env });
+      await api.register(favoritesRoutes, { db: database.db });
+      await api.register(campaignRoutes, { db: database.db });
+      await api.register(newsletterRoutes, { db: database.db, env, mailer: mail });
+      await api.register(marketingAdminRoutes, { db: database.db });
+      // Further modules (shipping, checkout, orders, ...) are registered here in later phases.
     },
     { prefix: API_PREFIX },
   );

@@ -33,9 +33,25 @@ describe("OpenAPI", () => {
         "/api/v1/auth/password/reset",
         "/api/v1/me",
         "/api/v1/me/password",
+        "/api/v1/cart",
+        "/api/v1/cart/items",
+        "/api/v1/cart/items/{itemId}",
+        "/api/v1/cart/import",
+        "/api/v1/cart/coupon",
+        "/api/v1/me/favorites",
+        "/api/v1/me/favorites/{productId}",
+        "/api/v1/me/favorites/import",
+        "/api/v1/campaigns/active",
+        "/api/v1/newsletter/subscriptions",
+        "/api/v1/newsletter/confirm",
+        "/api/v1/newsletter/unsubscribe",
+        "/api/v1/admin/coupons",
+        "/api/v1/admin/coupons/{id}",
+        "/api/v1/admin/campaigns",
+        "/api/v1/admin/campaigns/{id}",
       ]),
     );
-    for (const schema of ["ProductSummary", "ProductDetail", "ProductVariant", "Money", "PageInfo", "Collection", "Category", "CurrentUser"]) {
+    for (const schema of ["ProductSummary", "ProductDetail", "ProductVariant", "Money", "PageInfo", "Collection", "Category", "CurrentUser", "Cart", "CartItem", "CartCoupon", "Favorite", "Campaign", "AdminCoupon", "AdminCampaign"]) {
       expect(document.components.schemas).toHaveProperty(schema);
     }
     expect(Object.keys(document.paths["/api/v1/health"]?.get.responses ?? {})).toEqual(

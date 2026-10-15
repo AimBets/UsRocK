@@ -1,7 +1,7 @@
 # UsRock — backend
 
 API da UsRock: Node.js 24 + TypeScript, Fastify 5, PostgreSQL 17 + Drizzle ORM, Zod 4 e OpenAPI 3.1.
-Estado: **E1 (fundação) + E2 (catálogo público) + E3 (contas, sessão, permissões)**. Carrinho, pedidos e pagamentos ainda não existem.
+Estado: **E1 (fundação) + E2 (catálogo público) + E3 (contas, sessão, permissões) + E4 (sacola, favoritos, cupons, campanhas, newsletter)**. Frete, checkout, pedidos e pagamentos (E5) ainda não existem.
 
 ## Rodando localmente
 
@@ -13,7 +13,7 @@ npm install
 cp .env.example .env          # valores locais; nunca commitar .env
 npm run db:up                 # PostgreSQL (127.0.0.1:5433) + Mailpit (UI em http://127.0.0.1:8025)
 npm run db:migrate
-npm run db:seed               # catálogo DEMONSTRATIVO (6 produtos do mock da home)
+npm run db:seed               # catálogo DEMONSTRATIVO (6 produtos) + cupom DEMO10 e campanha demonstrativos
 npm run dev                   # http://127.0.0.1:3333 — docs em http://127.0.0.1:3333/docs
 ```
 
@@ -31,7 +31,7 @@ No PowerShell, se a política bloquear `npm.ps1`, use `npm.cmd`.
 | `db:up` / `db:down` | Sobe/para a infraestrutura local via Docker Compose |
 | `db:generate` | Gera migração a partir do schema Drizzle (`--custom` para SQL manual) |
 | `db:migrate` | Aplica migrações pendentes em `DATABASE_URL` |
-| `db:seed` | Insere/atualiza o catálogo demonstrativo (`is_demo`); recusado em produção; nunca sobrescreve produto real nem estoque existente |
+| `db:seed` | Insere/atualiza o catálogo, o cupom `DEMO10` e a campanha `demo-ritual-drop` demonstrativos (`is_demo`); recusado em produção; nunca sobrescreve registro real nem estoque existente |
 | `user:create-admin` | Cria o primeiro admin ou promove conta existente: `npm run user:create-admin -- --email x@y --name "Nome"`; senha em `ADMIN_PASSWORD` (obrigatória em produção) |
 | `openapi:generate` / `openapi:check` | Gera `openapi/openapi.json` / falha se estiver desatualizado (usado no CI) |
 
@@ -44,7 +44,7 @@ src/
   config/                env.ts (validação Zod), logger.ts (pino + redação)
   db/                    client.ts (pool + Drizzle), migrate.ts, schema/ (índice das tabelas)
   plugins/               error-handler, security (helmet/CORS/rate limit/Origin), openapi
-  shared/                errors (envelope de erro), pagination (cursor), money (centavos)
+  shared/                errors (envelope de erro), pagination (cursor), money (centavos), db-errors (SQLSTATE)
   modules/
     auth/                papéis, permissões, guards, interface SessionResolver
     accounts/            usuários, sessões por cookie, senha (Argon2id), recuperação, consentimentos

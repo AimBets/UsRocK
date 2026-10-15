@@ -1,6 +1,6 @@
 # Contratos de API — UsRock
 
-**Responsável:** Claude. **Estado (E3, 2026-10-13):** convenções transversais (E1), catálogo público somente leitura (E2) e contas/sessão/permissões (E3) implementados e testados no backend, ainda sem commit. Carrinho, frete, checkout, pedidos e landing pages continuam propostos.
+**Responsável:** Claude. **Estado (E4, 2026-10-15):** convenções transversais (E1), catálogo público (E2), contas/sessão/permissões (E3) e sacola, favoritos, cupons, campanhas e newsletter (E4) implementados e testados no backend; E4 ainda sem commit. Frete, checkout, pedidos e landing pages continuam propostos.
 
 **Fonte de verdade tipada:** `backend/openapi/openapi.json` (OpenAPI 3.1, gerado a partir dos schemas Zod; o CI falha se estiver desatualizado). Em desenvolvimento, documentação interativa em `http://127.0.0.1:3333/docs` e JSON em `/docs/json`. O frontend pode gerar tipos com `openapi-typescript` a partir desse arquivo. Nos componentes do documento, use os schemas sem sufixo (ex.: `ErrorResponse`) para respostas; os sufixados `…Input` descrevem o formato aceito em requisições e são gerados pela biblioteca.
 
@@ -39,7 +39,8 @@
 ```
 - `code` é estável e é o que o frontend deve tratar: `BAD_REQUEST` 400, `VALIDATION_ERROR` 400, `UNAUTHENTICATED` 401, `FORBIDDEN` 403, `NOT_FOUND` 404, `METHOD_NOT_ALLOWED` 405, `CONFLICT` 409, `PRECONDITION_FAILED` 412, `PAYLOAD_TOO_LARGE` 413, `UNSUPPORTED_MEDIA_TYPE` 415, `RATE_LIMITED` 429, `INTERNAL_ERROR` 500, `SERVICE_UNAVAILABLE` 503.
 - `message` é segura para exibição (pt-BR), mas não deve ser usada para lógica. Erros 5xx nunca expõem detalhes internos; eles ficam apenas no log, associados ao `requestId`.
-- `details` só aparece em erros de validação; `path` começa com `body`, `querystring`, `params` ou `headers`. O texto de `details[].message` vem da biblioteca de validação (inglês) e serve para depuração; a UI deve usar `path` + `code` para escolher sua própria mensagem.
+- `details` aparece em erros de validação e, desde a E4, também em `409 CONFLICT` de regras comerciais (ex.: `insufficient_stock`), sempre com `code` estável; `path` começa com `body`, `querystring`, `params` ou `headers`. O texto de `details[].message` em erros de schema vem da biblioteca de validação (inglês) e serve para depuração; a UI deve usar `path` + `code` para escolher sua própria mensagem.
+- **Corpo vazio:** rotas `PUT`/`POST`/`DELETE` que não têm corpo (ex.: `PUT /me/favorites/{id}`, `POST /auth/logout`) **não** podem receber `Content-Type: application/json` com corpo vazio — o Fastify responde `400`. Envie `{}` ou omita o `Content-Type` (verificado ao vivo em 2026-10-15).
 
 ### Paginação (`{ data, pageInfo }`)
 - Query: `limit` (1–100, padrão 24) e `cursor` (opaco, base64url, até 512 caracteres).
@@ -140,6 +141,97 @@ Lista paginada por cursor (ordem editorial `position`) e detalhe: `{ id, slug, t
 #### `GET /api/v1/categories`
 `{ data: Category[] }` **sem paginação** (máximo 500), árvore achatada com `parentId`.
 
+### Sacola, favoritos, cupons, campanhas e newsletter (E4)
+**Status:** implementado e testado (22 testes unitários de regras + 21 de integração com PostgreSQL real + verificação ao vivo com servidor compilado e Mailpit, 2026-10-15). Migração `0003_commerce` (aditiva). Checkout, frete, reserva de estoque e Mercado Pago ficam para a E5. Schemas completos em `backend/openapi/openapi.json` (`Cart`, `CartItem`, `CartCoupon`, `CartItemIssue`, `CouponIssue`, `CartImportResponse`, `Favorite`, `FavoriteList`, `Campaign`, `ActiveCampaigns`, `AdminCoupon`, `AdminCampaign`).
+
+#### Regras comerciais (sempre no servidor)
+- O cliente envia apenas `variantId` e `quantity`. **Preço, disponibilidade, desconto e totais nunca são aceitos do cliente** (campos extras são ignorados) e são recalculados a cada resposta.
+- Quantidade por item: 1–10. Até 50 itens diferentes por sacola. Adição/alteração acima do estoque disponível (físico − reservado) é recusada.
+- A sacola **não reserva estoque** (reserva entra no checkout, E5). Por isso cada leitura reavalia: item fora de venda → `unavailable`; sem estoque → `out_of_stock`; estoque menor que a quantidade → `insufficient_stock` (os totais usam `maxQuantity`); preço alterado desde a última alteração do item → `price_changed` (informativo, com `previousUnitPrice`).
+- Itens `unavailable`/`out_of_stock` ficam na sacola (para o cliente decidir), mas valem 0 nos totais. `hasIssues: true` quando algum item ou o cupom exige atenção (`price_changed` não conta).
+- `totals = { subtotal, discount, shipping: null, total }`, todos `Money`. `total = subtotal − discount`; frete entra na E5.
+- Alterações concorrentes na mesma sacola são serializadas no banco (`SELECT … FOR UPDATE`); testado com 6 adições simultâneas.
+
+#### Identificação da sacola
+- **Visitante:** cookie `usrock_cart` (token opaco de 256 bits; no banco só o SHA-256), `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` em produção, validade deslizante de 30 dias (`CART_GUEST_TTL_DAYS`). Criado só na primeira adição; `GET /cart` sem sacola não cria nada. Sacola expirada = vazia (cookie removido).
+- **Cliente:** uma sacola por conta, disponível em qualquer dispositivo.
+- **Junção após login:** na primeira chamada a `/cart*` com sessão e cookie de visitante, a sacola do visitante é mesclada à da conta e o cookie `usrock_cart` é removido. Para a mesma variante vale a **maior** quantidade (não soma, para não duplicar o mesmo item adicionado em dois dispositivos); o cupom da conta tem prioridade, senão o do visitante é mantido. Após logout, o visitante começa com sacola vazia; a da conta fica guardada.
+
+#### Rotas da sacola (todas `Cache-Control: no-store`; resposta `Cart` salvo indicação)
+| Método e rota | Corpo | Sucesso | Erros específicos |
+|---|---|---|---|
+| `GET /api/v1/cart` | — | `200 Cart` (`id: null` se não houver sacola) | — |
+| `POST /api/v1/cart/items` | `{ variantId, quantity?: 1–10 (padrão 1) }` — soma à quantidade existente | `200 Cart` (+ cookie na 1ª adição de visitante) | `404` variante inexistente/fora de venda; `409` com `details[0].code`: `max_quantity_exceeded`, `out_of_stock`, `insufficient_stock`, `cart_full` |
+| `PATCH /api/v1/cart/items/{itemId}` | `{ quantity: 1–10 }` (define) | `200 Cart` | `404` item não pertence à sacola; `409` `unavailable`, `out_of_stock`, `insufficient_stock` |
+| `DELETE /api/v1/cart/items/{itemId}` | — | `200 Cart` | `404` |
+| `POST /api/v1/cart/import` | `{ items: [{ variantId, quantity }] }` (1–50) | `200 { cart, skipped: [{ variantId, reason: "unavailable" \| "cart_full" }] }` | — |
+| `PUT /api/v1/cart/coupon` | `{ code }` (maiúsc./minúsc. indiferente) | `200 Cart` com `coupon.status = "applied"` | `400 VALIDATION_ERROR`, `details[0].path = "body.code"`, `code` ∈ `coupon_invalid`, `coupon_expired`, `coupon_usage_exhausted`, `coupon_requires_account`, `coupon_minimum_not_met`, `coupon_not_applicable`; `429` (20 tentativas/15 min por IP) |
+| `DELETE /api/v1/cart/coupon` | — | `200 Cart` (idempotente) | — |
+
+`POST /cart/import` serve para migrar a prévia do `localStorage`: soma às quantidades existentes (limite 10), ignora variantes inexistentes/fora de venda e não recusa por estoque (a falta aparece em `issues`). Chame uma vez e então limpe o estado local.
+
+Exemplo de `Cart` (IDs abreviados):
+```json
+{
+  "id": "5b1e…", "owner": "guest", "itemCount": 3, "hasIssues": false, "updatedAt": "2026-10-15T04:12:01.120Z",
+  "items": [{
+    "id": "c7a0…", "quantity": 2, "maxQuantity": 9,
+    "product": { "id": "9a83…", "slug": "eclipse-serpent-heavy-tee", "name": "Eclipse Serpent Heavy Tee", "isDemo": true,
+                 "image": { "url": "/images/product-serpent.png", "alt": "…" } },
+    "variant": { "id": "2bf5…", "sku": "DEMO-ECLIPSE-SERPENT-HEAVY-TEE-M", "size": "M", "color": null, "availability": "in_stock" },
+    "unitPrice": { "amountMinor": 13990, "currencyCode": "BRL" }, "compareAtUnitPrice": { "amountMinor": 15990, "currencyCode": "BRL" },
+    "previousUnitPrice": null, "lineTotal": { "amountMinor": 27980, "currencyCode": "BRL" }, "issues": []
+  }],
+  "coupon": { "code": "DEMO10", "description": "Cupom demonstrativo…", "status": "applied", "issue": null,
+              "discount": { "amountMinor": 2798, "currencyCode": "BRL" }, "minimumSubtotal": null },
+  "totals": { "subtotal": { "amountMinor": 40970, "currencyCode": "BRL" }, "discount": { "amountMinor": 2798, "currencyCode": "BRL" },
+              "shipping": null, "total": { "amountMinor": 38172, "currencyCode": "BRL" } }
+}
+```
+
+#### Cupons
+- Tipos: `percentage` (1–100 %, arredondado **para baixo**, teto opcional `maxDiscount`) e `fixed_amount` (centavos, nunca maior que o subtotal elegível).
+- Regras opcionais: subtotal mínimo, restrição a uma coleção (desconta só os itens dela), exige conta, início/fim, limite total de usos, ativo/inativo.
+- Código inexistente, inativo ou ainda não iniciado retornam o mesmo `coupon_invalid` (não revela cupons agendados). Um só cupom por sacola.
+- O cupom é **reavaliado a cada leitura**: se deixar de valer (ex.: subtotal abaixo do mínimo), continua na sacola com `status: "not_applicable"`, `issue` e desconto 0.
+- `usageLimit` é comparado com `timesRedeemed`, que só será incrementado ao criar pedidos (E5). Limite por cliente: não implementado (E5).
+
+#### Favoritos (exigem sessão; `401` para visitante)
+| Método e rota | Corpo | Sucesso | Erros |
+|---|---|---|---|
+| `GET /api/v1/me/favorites` | — | `200 { data: [{ product: ProductSummary, addedAt }] }` (mais recentes primeiro, máx. 200; só produtos à venda) | `401` |
+| `PUT /api/v1/me/favorites/{productId}` | — (enviar `{}` ou sem `Content-Type`) | `204` (idempotente) | `404` produto inexistente/fora de venda; `409 favorites_full` |
+| `DELETE /api/v1/me/favorites/{productId}` | — | `204` (idempotente) | `401` |
+| `POST /api/v1/me/favorites/import` | `{ productIds: uuid[] }` (1–200) | `200` lista resultante (união; desconhecidos ignorados) | `401` |
+
+Visitantes continuam com favoritos no navegador; após login, importar com `/me/favorites/import`. Produto arquivado some da lista, mas o vínculo é mantido.
+
+#### Campanhas
+- `GET /api/v1/campaigns/active?placement=announcement_bar|home_hero|home_panel` (placement opcional) → `200 { data: Campaign[] }`, até 20, por `priority` desc. Público, `Cache-Control: public, max-age=60`.
+- Só campanhas `published` com `startsAt ≤ agora < endsAt` (ou sem fim). `Campaign = { id, slug, placement, title, subtitle, cta: { label, href } | null, media: { url, alt } | null, collection: CollectionRef | null, couponCode: string | null, startsAt, endsAt, isDemo }`.
+- `couponCode` só aparece enquanto o próprio cupom estiver válido; `collection` só se publicada. `href`/`media.url` são sempre caminho do site (`/…`) ou `https://` (validado no servidor e no banco).
+- `isDemo: true` = conteúdo do seed (`demo-ritual-drop` + cupom `DEMO10`); exibir com o mesmo cuidado dos produtos demonstrativos.
+
+#### Newsletter (dupla confirmação)
+| Método e rota | Corpo | Sucesso | Erros |
+|---|---|---|---|
+| `POST /api/v1/newsletter/subscriptions` | `{ email, consent: true, source?: "footer" \| "home" \| "landing_page" \| "account" }` | `202 { message }` **sempre igual** (novo, pendente ou já inscrito) | `400` (`body.consent` se não for `true`); `429` (10/15 min por IP; 3/15 min por e-mail) |
+| `POST /api/v1/newsletter/confirm` | `{ token }` | `200 { status: "confirmed" }` | `400` `body.token` `invalid_token` (inválido, usado ou expirado) |
+| `POST /api/v1/newsletter/unsubscribe` | `{ token }` | `200 { status: "unsubscribed" }` (idempotente) | `400` `invalid_token` |
+
+- `consent: true` é o aceite explícito de receber e-mails de marketing; a caixa **não pode** vir marcada nem ser opcional, porque a newsletter em si é comunicação de marketing.
+- O e-mail de confirmação traz `{APP_PUBLIC_URL}/newsletter/confirmar?token=<43>` (48 h, uso único) e `{APP_PUBLIC_URL}/newsletter/cancelar?token=<43>`. **Essas páginas ainda não existem no frontend** (pedido ao Codex). Só endereços `confirmed` poderão receber envios de marketing (envio de campanhas: E8).
+- LGPD: histórico imutável (`newsletter_events`) com versão da política e origem, sem IP/navegador; se o e-mail tiver conta, a confirmação e o descadastro também são registrados em `consents` (`marketing_email`). Tokens guardados só como hash; e-mail e tokens nunca vão para o log (testado).
+- Endereço já confirmado não recebe novo e-mail; pendente não recebe reenvio antes de 60 s.
+
+#### Administração mínima (permissão `campaigns:manage`: `operator` e `admin`)
+| Rota | Uso |
+|---|---|
+| `GET /api/v1/admin/coupons`, `POST /api/v1/admin/coupons`, `PATCH /api/v1/admin/coupons/{id}` | Lista (cursor, mais recentes primeiro), cria, altera; sem exclusão (desativar com `isActive: false`) |
+| `GET /api/v1/admin/campaigns`, `POST /api/v1/admin/campaigns`, `PATCH /api/v1/admin/campaigns/{id}` | Idem; criação em `draft`; publicar/arquivar via `status` |
+
+Valores em centavos (`amountOffMinor`, `maxDiscountMinor`, `minSubtotalMinor`); regras cruzadas validadas (`400` por campo), código/slug duplicado → `409 already_exists`, referência inexistente → `400 not_found`. Cada alteração gera log com `actorId` (trilha persistente de auditoria: E6). A interface do admin não existe ainda.
+
 ## Modelo de dados (E2 criado; E3+ planejado)
 Cada domínio terá suas tabelas Drizzle em `backend/src/modules/<domínio>/`. Convenções: UUID, `snake_case`, `created_at`/`updated_at` em `timestamptz`, valores em centavos (`*_minor`), e-mails/slugs em `citext` (extensão criada na migração `0000_init`).
 
@@ -148,7 +240,7 @@ Cada domínio terá suas tabelas Drizzle em `backend/src/modules/<domínio>/`. C
 | Catálogo | `products`, `product_variants` (SKU, tamanho/cor, preço e preço anterior em centavos), `categories`, `collections`, `product_collections`, `product_media` | **Criado na E2** (migração `0001_catalog`) |
 | Estoque | `inventory_levels` (físico/reservado/limite de estoque baixo) e `inventory_movements` (histórico) **criados na E2**; `stock_reservations` (com expiração) na E5 | E2/E5 |
 | Contas e clientes | `users`, `sessions` (hash do token), `password_reset_tokens`, `consents` **criados na E3** (migração `0002_accounts`); `addresses` e perfil do cliente | E3 / E5 |
-| Carrinho e marketing | `carts`, `cart_items`, `coupons`, `campaigns`, `favorites`, `newsletter_subscriptions` (confirmação em duas etapas) | E4 |
+| Carrinho e marketing | `carts` (visitante por hash de token ou conta), `cart_items` (quantidade 1–10, preço de referência), `coupons`, `campaigns`, `favorites`, `newsletter_subscriptions` + `newsletter_events` (dupla confirmação, trilha de consentimento) | **Criado na E4** (migração `0003_commerce`) |
 | Pedidos e pagamentos | `orders` (cópia de preços/endereço no momento da compra), `order_items`, `order_status_history`, `payments`, `shipments`, `webhook_events` (chave única por evento do provedor), `idempotency_keys` | E5 |
 | Operação | `audit_log` (quem, o quê, antes/depois, sem dados pessoais desnecessários) | E6 |
 | Landing pages | `landing_pages` (slug, status `draft`/`scheduled`/`published`/`archived`, versão publicada), `landing_page_versions` (documento JSON imutável com `schemaVersion`, autor, data), `media_assets` | E7 |
@@ -165,7 +257,11 @@ Landing pages: cada salvamento cria uma versão imutável; o documento JSON tem 
 | Coleções | Lista e detalhe | `GET /api/v1/collections`, `GET /api/v1/collections/{slug}` | **Implementado e testado (E2)** |
 | Categorias | Lista | `GET /api/v1/categories` | **Implementado e testado (E2)** |
 | Contas | Cadastro, login, logout, sessão atual, troca e recuperação de senha | `/api/v1/auth/*`, `/api/v1/me`, `/api/v1/me/password` | **Implementado e testado (E3)** |
-| Carrinho | Itens e totais | `POST /api/v1/cart/items` | Proposta (E4) |
+| Carrinho | Sacola, itens, importação, cupom e totais | `/api/v1/cart`, `/cart/items`, `/cart/items/{itemId}`, `/cart/import`, `/cart/coupon` | **Implementado e testado (E4)** |
+| Favoritos | Favoritos da conta | `/api/v1/me/favorites`, `/me/favorites/{productId}`, `/me/favorites/import` | **Implementado e testado (E4)** |
+| Campanhas | Campanhas vigentes | `GET /api/v1/campaigns/active` | **Implementado e testado (E4)** |
+| Newsletter | Inscrição, confirmação, descadastro | `/api/v1/newsletter/subscriptions`, `/confirm`, `/unsubscribe` | **Implementado e testado (E4)** |
+| Admin marketing | Cupons e campanhas | `/api/v1/admin/coupons`, `/api/v1/admin/campaigns` (+ `/{id}`) | **Implementado e testado (E4)**; UI pendente |
 | Frete | Cotação por CEP/itens | `POST /api/v1/shipping/quotes` | Proposta (E5) |
 | Checkout | Iniciar pagamento | `POST /api/v1/checkouts` | Proposta (E5) |
 | Pedidos | Status | `GET /api/v1/orders/{id}` | Proposta (E5) |

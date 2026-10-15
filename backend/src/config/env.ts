@@ -36,6 +36,8 @@ export const envSchema = z
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
     /** Version identifier of the terms/privacy texts the user accepts at sign-up. */
     LEGAL_POLICY_VERSION: z.string().min(1).max(64).default("rascunho-2026-10"),
+    /** Guest carts expire after this many days without changes (sliding). */
+    CART_GUEST_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
     SMTP_HOST: z.string().min(1).default("127.0.0.1"),
     SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(1025),
     SMTP_SECURE: booleanString.default(false),

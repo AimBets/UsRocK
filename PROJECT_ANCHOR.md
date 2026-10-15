@@ -15,7 +15,7 @@
 - Claude: `backend/`, contratos de APIs e integrações.
 - Ambos: leitura dos handoffs; registro de suas tarefas; documentação central reconciliada a cada integração.
 
-## Estado atual — catálogo E1–E3 recuperado e validado; prévia frontend E4 preservada
+## Estado atual — backend E4 implementado e testado; integração frontend E4 pendente
 - [x] Definição de escopo e divisão de responsabilidades.
 - [x] Documentos iniciais de colaboração criados (após serem inseridos no repositório).
 - [~] Base do frontend gerada e executável localmente; aprovação da stack completa e infraestrutura compartilhada pendentes.
@@ -24,6 +24,7 @@
 - [x] Integração frontend/backend E1/E2 validada localmente: rewrite, catálogo, filtros, produto e estados consultando PostgreSQL via Fastify.
 - [~] Autenticação E3 implementada e validada ponta a ponta no frontend; revisão e commit/PR das correções finais pendentes.
 - [~] Prévia frontend E4 implementada para sacola, favoritos, campanhas, cupom e newsletter; estado local testado, mas integração com API e inspeção visual em navegador permanecem pendentes.
+- [x] Backend E4 implementado e testado localmente (sacola de visitante/conta com junção no login, favoritos, cupons, campanhas, newsletter com dupla confirmação; 89 unitários + 66 de integração e verificação ao vivo em 2026-10-15; sem commit até autorização).
 - [x] Regressão de vitrines investigada e recuperada: Fastify offline era a causa; seis produtos, detalhes e imagens foram revalidados de PostgreSQL até o build Next, sem mocks e sem alteração no backend.
 - [ ] Admin e CMS implementados.
 - [ ] Editor de landing pages implementado.
@@ -33,7 +34,7 @@
 ## Próxima ação prioritária
 1. Revisar a branch `codex/e4-commerce` e executar `npm.cmd run test:catalog-live` com PostgreSQL, Fastify e Next ativos antes de autorizar commit/PR.
 2. Completar QA interativo da E4 em 390, 768, 1024 e 1440 px; catálogo e detalhe já tiveram inspeção visual desktop e o hero foi inspecionado em desktop/mobile.
-3. Aprovar e implementar o contrato backend E4 antes de ativar persistência de servidor, cupons, campanhas, newsletter ou sincronização de favoritos; revalidar preço, estoque e totais exclusivamente no backend.
+3. Revisar e autorizar o commit/PR da branch `claude/e4-commerce` (backend E4). Em seguida, o Codex integra a UI E4 aos endpoints documentados em `docs/API_CONTRACTS.md` (pedidos em `docs/HANDOFF_CLAUDE.md`), incluindo as páginas `/newsletter/confirmar` e `/newsletter/cancelar`.
 
 ## Registro das integrações
 | Funcionalidade | Frontend | Backend | Estado da integração |
@@ -41,13 +42,25 @@
 | Saúde da API | Rewrite validado | Implementado (`/api/v1/health`) | Next → Fastify → PostgreSQL comprovado localmente |
 | Catálogo | Implementado e validado (`/`, `/catalogo`, `/produto/[slug]`) | Implementado e testado (E2: `/products`, `/products/{slug}`, `/collections`, `/categories`) | Integrado localmente; seed permanece `isDemo` |
 | Login | Implementado e validado (`/entrar`, `/cadastro`, `/conta`, recuperação e redefinição) | Implementado e testado (E3: cadastro, login, logout, `/me`, troca e recuperação de senha) | Integrado ponta a ponta via rewrite; revisão/PR do frontend pendentes |
-| Carrinho e favoritos | Prévia local testada (`/carrinho`, drawer e `/favoritos`) | Pendente (E4) | Sem integração; preço, estoque, descontos e totais não são autoritativos no cliente |
+| Carrinho e favoritos | Prévia local testada (`/carrinho`, drawer e `/favoritos`) | Implementado e testado (E4: `/cart*`, `/me/favorites*`) | Integração pendente (Codex); servidor é a fonte de preço, estoque, desconto e totais |
+| Cupons e campanhas | Interfaces preparatórias (`CouponForm`, `CampaignPanel`) | Implementado e testado (E4: `/cart/coupon`, `/campaigns/active`, admin mínimo) | Integração pendente (Codex); UI do admin pendente |
+| Newsletter | Formulário preparatório no rodapé | Implementado e testado (E4: inscrição, confirmação, descadastro) | Integração e páginas de confirmação/cancelamento pendentes (Codex) |
 | Frete | Pendente | Pendente | Não iniciado |
 | Checkout | Pendente | Pendente | Não iniciado |
 | Landing pages | Pendente | Pendente | Não iniciado |
 
 ## Alterações recentes
 - Bootstrap: estrutura inicial e documentos criados. Nenhuma integração funcional afirmada.
+
+## Registro factual — Backend E4 (sacola e marketing), 2026-10-15 (Claude)
+- Remoto `AimBets/UsRocK` e branch `claude/e4-commerce` (base `e030ad0`) confirmados. Nenhum arquivo de `frontend/` foi alterado; checkout, frete, Mercado Pago e SuperFrete não foram tocados (E5).
+- Migração aditiva `0003_commerce`: `carts`, `cart_items`, `favorites`, `coupons`, `campaigns`, `newsletter_subscriptions`, `newsletter_events`, com restrições no banco para as regras comerciais.
+- Sacola de visitante (cookie `usrock_cart` httpOnly, só hash no banco) e de conta; junção automática na primeira chamada após login (maior quantidade vence); importação da prévia local; preço, estoque, cupom e totais sempre recalculados no servidor, com avisos por item; concorrência serializada no banco.
+- Cupons percentuais/fixos com mínimo, coleção, exigência de conta, vigência e limite de usos; favoritos da conta; feed público de campanhas vigentes; administração mínima de cupons/campanhas com `campaigns:manage`; newsletter com consentimento explícito, dupla confirmação por e-mail, descadastro e trilha LGPD.
+- Seed demonstrativo ganhou cupom `DEMO10` e campanha `demo-ritual-drop` (`isDemo`); migração e seed reaplicados duas vezes sem alterar o catálogo (6 produtos / 26 variantes).
+- Verificações reais: lint, typecheck, build, `openapi:check`, 89 testes unitários e 66 de integração com PostgreSQL; ponta a ponta ao vivo com servidor compilado e Mailpit (sacola → cupom → cadastro → junção → favoritos → newsletter confirmada e cancelada). Dados fictícios removidos.
+- Constatado: o `openapi:check` do frontend falha por fim de linha CRLF na cópia local, mesmo com o contrato do `HEAD`; conteúdo gerado idêntico. Registrado para o Codex.
+- Pendências: reserva de estoque/checkout/resgate de cupom (E5), limpeza de sacolas expiradas, auditoria persistente (E6), envio de campanhas (E8). Nenhum commit, push ou merge realizado.
 
 ## Registro factual — Correção da regressão de catálogo E4, 2026-10-15 (Codex)
 - Remoto `AimBets/UsRocK` e branch `codex/e4-commerce` confirmados. A comparação com `HEAD` mostrou que a E4 preservou cliente HTTP, rewrite, filtros e consultas do catálogo; a homepage recebeu apenas o painel de campanha entre seções comerciais.
