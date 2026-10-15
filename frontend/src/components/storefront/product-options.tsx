@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import type { ProductDetail } from "@/types/catalog";
 import { formatMoney } from "@/lib/format";
+import { toCommerceSnapshot } from "@/types/commerce";
 import { useStorefront } from "./storefront-provider";
 
 export function ProductOptions({ product }: { product: ProductDetail }) {
@@ -15,8 +16,8 @@ export function ProductOptions({ product }: { product: ProductDetail }) {
 
   function add() {
     if (!variant || variant.availability === "out_of_stock") return;
-    addToCart(product.id, variant.id);
-    setMessage(`${product.name}, tamanho ${variant.size}, foi adicionado à sacola demonstrativa.`);
+    addToCart(toCommerceSnapshot(product), variant.id);
+    setMessage(`${product.name}, tamanho ${variant.size}, foi adicionado à prévia da sacola.`);
   }
 
   return (

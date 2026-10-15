@@ -6,12 +6,12 @@ import { Heart, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { navigation } from "@/data/storefront";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useStorefront } from "./storefront-provider";
+import { CartDrawer } from "@/components/commerce/cart-drawer";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
-  const { cartCount, favoriteIds } = useStorefront();
+  const { cartCount, favoriteIds, cartOpen, setCartOpen } = useStorefront();
   const { status: authStatus, user } = useAuth();
 
   useEffect(() => {
@@ -59,10 +59,10 @@ export function Header() {
               <UserRound size={20} />
               {authStatus === "authenticated" && <span className="auth-indicator" aria-hidden="true" />}
             </Link>
-            <button className="icon-button header-favorite-button relative" type="button" aria-label={`${favoriteIds.size} favoritos`}>
+            <Link className="icon-button header-favorite-button relative" href="/favoritos" aria-label={`${favoriteIds.size} favoritos`}>
               <Heart size={20} />
               {favoriteIds.size > 0 && <span className="counter">{favoriteIds.size}</span>}
-            </button>
+            </Link>
             <button
               className="icon-button relative"
               type="button"
@@ -95,19 +95,7 @@ export function Header() {
         </aside>
       </div>
 
-      <div className={`drawer-overlay ${cartOpen ? "is-open" : ""}`} onClick={() => setCartOpen(false)} aria-hidden={!cartOpen}>
-        <aside className="drawer drawer-right" onClick={(event) => event.stopPropagation()} aria-label="Sacola" role="dialog" aria-modal="true" inert={!cartOpen}>
-          <div className="drawer-heading">
-            <div><span className="eyebrow">Sacola</span><p className="mt-1 text-sm text-stone-400">Estado local demonstrativo</p></div>
-            <button className="icon-button" type="button" onClick={() => setCartOpen(false)} aria-label="Fechar sacola"><X size={22} /></button>
-          </div>
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <ShoppingBag className="mb-5 text-copper" size={42} strokeWidth={1.25} />
-            <p className="font-display text-3xl uppercase">{cartCount ? `${cartCount} ${cartCount === 1 ? "item" : "itens"}` : "Sua sacola está vazia"}</p>
-            <p className="mt-3 max-w-xs text-sm leading-6 text-stone-400">Itens adicionados nesta fase não são persistidos nem enviados a um checkout real.</p>
-          </div>
-        </aside>
-      </div>
+      <CartDrawer />
 
       <div className={`search-overlay ${searchOpen ? "is-open" : ""}`} aria-hidden={!searchOpen} inert={!searchOpen} role="dialog" aria-modal="true" aria-label="Busca de produtos">
         <div className="shell relative pt-24">
