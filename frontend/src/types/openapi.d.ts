@@ -6,6 +6,10 @@ export interface components {
       "amountMinor": number;
       "currencyCode": "BRL";
     };
+    MoneyInput: {
+      "amountMinor": number;
+      "currencyCode": "BRL";
+    };
     Media: {
       "url": string;
       "alt": string;
@@ -216,6 +220,186 @@ export interface components {
     NewsletterUnsubscribed: {
       "status": "unsubscribed";
     };
+    Address: {
+      "id": string;
+      "label": string | null;
+      "recipientName": string;
+      "recipientDocumentMasked": string;
+      "recipientPhoneMasked": string;
+      "postalCode": string;
+      "street": string;
+      "number": string;
+      "complement": string | null;
+      "district": string;
+      "city": string;
+      "state": string;
+      "isDefault": boolean;
+      "createdAt": string;
+      "updatedAt": string;
+    };
+    AddressList: {
+      "data": Array<components["schemas"]["Address"]>;
+    };
+    ShippingOption: {
+      "serviceId": string;
+      "name": string;
+      "carrier": string;
+      "price": components["schemas"]["Money"];
+      "deliveryDays": {
+      "min": number;
+      "max": number;
+    };
+    };
+    ShippingQuote: {
+      "id": string;
+      "provider": string;
+      "isSimulated": boolean;
+      "postalCode": string;
+      "expiresAt": string;
+      "options": Array<components["schemas"]["ShippingOption"]>;
+    };
+    CheckoutSummary: {
+      "items": Array<{
+      "variantId": string;
+      "productName": string;
+      "size": string;
+      "quantity": number;
+      "unitPrice": components["schemas"]["Money"];
+      "lineTotal": components["schemas"]["Money"];
+    }>;
+      "coupon": {
+      "code": string;
+      "discount": components["schemas"]["Money"];
+    } | null;
+      "shipping": {
+      "serviceId": string;
+      "name": string;
+      "carrier": string;
+      "price": components["schemas"]["Money"];
+      "deliveryDays": {
+      "min": number;
+      "max": number;
+    };
+    };
+      "totals": {
+      "subtotal": components["schemas"]["Money"];
+      "discount": components["schemas"]["Money"];
+      "shipping": components["schemas"]["Money"];
+      "total": components["schemas"]["Money"];
+    };
+      "reservationMinutes": number;
+      "isDemo": boolean;
+    };
+    CheckoutResult: {
+      "order": components["schemas"]["Order"];
+      "payment": components["schemas"]["PaymentSession"] | null;
+    };
+    PaymentSession: {
+      "provider": "mercado_pago";
+      "environment": "sandbox" | "production";
+      "checkoutUrl": string;
+      "expiresAt": string;
+    };
+    OrderStatus: "pending_payment" | "paid" | "in_fulfillment" | "shipped" | "delivered" | "cancelled" | "expired" | "refunded";
+    OrderItem: {
+      "id": string;
+      "productId": string;
+      "productSlug": string;
+      "productName": string;
+      "variantId": string;
+      "sku": string;
+      "size": string;
+      "color": string | null;
+      "image": {
+      "url": string;
+      "alt": string;
+    } | null;
+      "unitPrice": components["schemas"]["Money"];
+      "compareAtUnitPrice": components["schemas"]["Money"] | null;
+      "quantity": number;
+      "lineTotal": components["schemas"]["Money"];
+      "isDemo": boolean;
+    };
+    OrderShippingAddress: {
+      "recipientName": string;
+      "recipientDocumentMasked": string;
+      "recipientPhoneMasked": string;
+      "postalCode": string;
+      "street": string;
+      "number": string;
+      "complement": string | null;
+      "district": string;
+      "city": string;
+      "state": string;
+    };
+    OrderTracking: {
+      "status": string;
+      "code": string | null;
+      "carrier": string;
+    };
+    OrderPayment: {
+      "provider": string;
+      "environment": "sandbox" | "production";
+      "status": string;
+      "statusDetail": string | null;
+      "updatedAt": string;
+    };
+    Order: {
+      "id": string;
+      "number": string;
+      "status": components["schemas"]["OrderStatus"];
+      "statusLabel": string;
+      "isDemo": boolean;
+      "items": Array<components["schemas"]["OrderItem"]>;
+      "coupon": {
+      "code": string;
+      "discount": components["schemas"]["Money"];
+    } | null;
+      "shipping": {
+      "provider": string;
+      "serviceId": string;
+      "name": string;
+      "carrier": string;
+      "price": components["schemas"]["Money"];
+      "deliveryDays": {
+      "min": number;
+      "max": number;
+    };
+      "address": components["schemas"]["OrderShippingAddress"];
+      "tracking": components["schemas"]["OrderTracking"] | null;
+    };
+      "totals": {
+      "subtotal": components["schemas"]["Money"];
+      "discount": components["schemas"]["Money"];
+      "shipping": components["schemas"]["Money"];
+      "total": components["schemas"]["Money"];
+    };
+      "payment": components["schemas"]["OrderPayment"] | null;
+      "reservationExpiresAt": string;
+      "canPay": boolean;
+      "canCancel": boolean;
+      "history": Array<{
+      "status": components["schemas"]["OrderStatus"];
+      "at": string;
+    }>;
+      "createdAt": string;
+      "paidAt": string | null;
+      "cancelledAt": string | null;
+    };
+    OrderSummary: {
+      "id": string;
+      "number": string;
+      "status": components["schemas"]["OrderStatus"];
+      "statusLabel": string;
+      "itemCount": number;
+      "total": components["schemas"]["Money"];
+      "isDemo": boolean;
+      "createdAt": string;
+    };
+    OrderList: {
+      "data": Array<components["schemas"]["OrderSummary"]>;
+      "pageInfo": components["schemas"]["PageInfo"];
+    };
   };
 }
 
@@ -274,5 +458,50 @@ export interface commerceRequests {
     };
   unsubscribeNewsletter: {
       "token": string;
+    };
+}
+
+export interface checkoutRequests {
+  createAddress: {
+      "label"?: string | null;
+      "recipientName": string;
+      "recipientDocument": string;
+      "recipientPhone": string;
+      "postalCode": string;
+      "street": string;
+      "number": string;
+      "complement"?: string | null;
+      "district": string;
+      "city": string;
+      "state": string;
+      "isDefault"?: boolean;
+    };
+  updateAddress: {
+      "label"?: string | null;
+      "recipientName"?: string;
+      "recipientDocument"?: string;
+      "recipientPhone"?: string;
+      "postalCode"?: string;
+      "street"?: string;
+      "number"?: string;
+      "complement"?: string | null;
+      "district"?: string;
+      "city"?: string;
+      "state"?: string;
+      "isDefault"?: boolean;
+    };
+  quoteShipping: {
+      "postalCode": string;
+    };
+  previewCheckout: {
+      "addressId": string;
+      "quoteId": string;
+      "serviceId": string;
+    };
+  placeCheckout: {
+      "addressId": string;
+      "quoteId": string;
+      "serviceId": string;
+      "expectedTotal"?: components["schemas"]["MoneyInput"];
     };
 }

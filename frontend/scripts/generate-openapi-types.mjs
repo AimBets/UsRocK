@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 
 const source = JSON.parse(await readFile(new URL("../../backend/openapi/openapi.json", import.meta.url), "utf8"));
-const selected = ["Availability", "Money", "Media", "CategoryRef", "CollectionRef", "ProductVariant", "ProductSummary", "ProductDetail", "Collection", "Category", "PageInfo", "ErrorDetail", "ErrorResponse", "CurrentUser", "UserResponse", "AcceptedResponse", "Cart", "CartItem", "CartCoupon", "CartItemIssue", "CouponIssue", "CartImportResponse", "Favorite", "FavoriteList", "Campaign", "ActiveCampaigns", "NewsletterConfirmed", "NewsletterUnsubscribed"];
+const selected = ["Availability", "Money", "MoneyInput", "Media", "CategoryRef", "CollectionRef", "ProductVariant", "ProductSummary", "ProductDetail", "Collection", "Category", "PageInfo", "ErrorDetail", "ErrorResponse", "CurrentUser", "UserResponse", "AcceptedResponse", "Cart", "CartItem", "CartCoupon", "CartItemIssue", "CouponIssue", "CartImportResponse", "Favorite", "FavoriteList", "Campaign", "ActiveCampaigns", "NewsletterConfirmed", "NewsletterUnsubscribed", "Address", "AddressList", "ShippingOption", "ShippingQuote", "CheckoutSummary", "CheckoutResult", "PaymentSession", "OrderStatus", "OrderItem", "OrderShippingAddress", "OrderTracking", "OrderPayment", "Order", "OrderSummary", "OrderList"];
 const authRequestPaths = {
   register: ["/api/v1/auth/register", "post"],
   login: ["/api/v1/auth/login", "post"],
@@ -18,6 +18,13 @@ const commerceRequestPaths = {
   subscribeNewsletter: ["/api/v1/newsletter/subscriptions", "post"],
   confirmNewsletter: ["/api/v1/newsletter/confirm", "post"],
   unsubscribeNewsletter: ["/api/v1/newsletter/unsubscribe", "post"],
+};
+const checkoutRequestPaths = {
+  createAddress: ["/api/v1/me/addresses", "post"],
+  updateAddress: ["/api/v1/me/addresses/{id}", "patch"],
+  quoteShipping: ["/api/v1/shipping/quotes", "post"],
+  previewCheckout: ["/api/v1/checkouts/preview", "post"],
+  placeCheckout: ["/api/v1/checkouts", "post"],
 };
 
 function typeFor(schema) {
@@ -57,15 +64,21 @@ const commerceRequests = Object.entries(commerceRequestPaths).map(([name, [path,
   if (!schema) throw new Error(`Request body OpenAPI ausente: ${method.toUpperCase()} ${path}`);
   return `  ${name}: ${typeFor(schema)};`;
 }).join("\n");
+const checkoutRequests = Object.entries(checkoutRequestPaths).map(([name, [path, method]]) => {
+  const schema = source.paths?.[path]?.[method]?.requestBody?.content?.["application/json"]?.schema;
+  if (!schema) throw new Error(`Request body OpenAPI ausente: ${method.toUpperCase()} ${path}`);
+  return `  ${name}: ${typeFor(schema)};`;
+}).join("\n");
 const output = `// Gerado por npm run openapi:generate. Não edite manualmente.\nexport interface components {\n  schemas: {\n${body}\n  };\n}\n\nexport interface authRequests {\n${authRequests}\n}\n`;
 const finalOutput = output + `\nexport interface commerceRequests {\n${commerceRequests}\n}\n`;
+const completeOutput = finalOutput + `\nexport interface checkoutRequests {\n${checkoutRequests}\n}\n`;
 const target = new URL("../src/types/openapi.d.ts", import.meta.url);
 
 if (process.argv.includes("--check")) {
   const current = await readFile(target, "utf8").catch(() => "");
-  if (current.replace(/\r\n/g, "\n") !== finalOutput.replace(/\r\n/g, "\n")) {
+  if (current.replace(/\r\n/g, "\n") !== completeOutput.replace(/\r\n/g, "\n")) {
     throw new Error("Tipos OpenAPI desatualizados. Execute `npm run openapi:generate`.");
   }
 } else {
-  await writeFile(target, finalOutput, "utf8");
+  await writeFile(target, completeOutput, "utf8");
 }
