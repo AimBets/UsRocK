@@ -67,6 +67,9 @@ export const errors = {
     new AppError(412, "PRECONDITION_FAILED", message),
   rateLimited: (message = "Muitas requisições. Tente novamente em instantes.") =>
     new AppError(429, "RATE_LIMITED", message),
+  /** External dependency (payment, freight) unavailable; `details` names which one. */
+  serviceUnavailable: (message = "Serviço temporariamente indisponível.", details?: ErrorDetail[]) =>
+    new AppError(503, "SERVICE_UNAVAILABLE", message, details),
 };
 
 /** Safe default message per code, used when an error originates outside our own code. */

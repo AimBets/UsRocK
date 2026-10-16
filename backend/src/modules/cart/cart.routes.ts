@@ -40,14 +40,13 @@ export interface CartRoutesOptions {
 const COUPON_WINDOW = 15 * 60_000;
 const COUPON_ATTEMPTS_PER_WINDOW = 20;
 
-export const cartRoutes: FastifyPluginAsyncZod<CartRoutesOptions> = async (app, { db, env }) => {
+/**
+ * Resolves the cart for a request (guest cookie or account), shared by the cart, shipping and
+ * checkout routes. After sign-in, the first call merges the guest cart into the account cart.
+ */
+export function createCartResolver(db: Db, env: Env) {
   const settings: CartSettings = { guestTtlDays: env.CART_GUEST_TTL_DAYS };
   const cookieOptions = { httpOnly: true, secure: env.SESSION_COOKIE_SECURE, sameSite: "lax", path: "/" } as const;
-
-  // Carts are personal and change constantly: never cache them.
-  app.addHook("onSend", async (_request, reply) => {
-    reply.header("cache-control", "no-store");
-  });
 
   function setGuestCookie(reply: FastifyReply, token: string) {
     reply.setCookie(CART_COOKIE_NAME, token, { ...cookieOptions, maxAge: settings.guestTtlDays * 86_400 });
@@ -91,6 +90,17 @@ export const cartRoutes: FastifyPluginAsyncZod<CartRoutesOptions> = async (app, 
     if (token) setGuestCookie(reply, token);
     return { cart, authenticated };
   }
+
+  return { settings, existingCart, writableCart };
+}
+
+export const cartRoutes: FastifyPluginAsyncZod<CartRoutesOptions> = async (app, { db, env }) => {
+  const { settings, existingCart, writableCart } = createCartResolver(db, env);
+
+  // Carts are personal and change constantly: never cache them.
+  app.addHook("onSend", async (_request, reply) => {
+    reply.header("cache-control", "no-store");
+  });
 
   async function respond(cartId: string, authenticated: boolean) {
     return buildCartView(db, await findCartById(db, cartId), { authenticated });

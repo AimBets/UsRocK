@@ -140,6 +140,7 @@ describe("marketing validation rules", () => {
     startsAt: NOW,
     endsAt: null,
     usageLimit: null,
+    perCustomerLimit: null,
     isActive: true,
   };
 

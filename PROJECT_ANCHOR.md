@@ -15,7 +15,7 @@
 - Claude: `backend/`, contratos de APIs e integrações.
 - Ambos: leitura dos handoffs; registro de suas tarefas; documentação central reconciliada a cada integração.
 
-## Estado atual — E4 integrada; frontend E5 validado contra branch separada do backend
+## Estado atual — backend e frontend E5 reunidos localmente; integração definitiva em validação
 - [x] Definição de escopo e divisão de responsabilidades.
 - [x] Documentos iniciais de colaboração criados (após serem inseridos no repositório).
 - [~] Base do frontend gerada e executável localmente; aprovação da stack completa e infraestrutura compartilhada pendentes.
@@ -27,14 +27,15 @@
 - [x] Backend E4 implementado e testado localmente (sacola de visitante/conta com junção no login, favoritos, cupons, campanhas, newsletter com dupla confirmação; 89 unitários + 66 de integração e verificação ao vivo em 2026-10-15; sem commit até autorização).
 - [x] Regressão de vitrines investigada e recuperada: Fastify offline era a causa; seis produtos, detalhes e imagens foram revalidados de PostgreSQL até o build Next, sem mocks e sem alteração no backend.
 - [~] Frontend E5 implementado e validado estaticamente, ao vivo e responsivamente contra uma cópia temporária de `claude/e5-checkout`; integração do backend à base, tipos OpenAPI gerados e sandboxes reais ainda pendentes.
+- [x] Backend E5 implementado e testado localmente (endereços, frete SuperFrete, checkout idempotente com reserva de estoque, pedidos, Mercado Pago Checkout Pro, webhooks assinados, e-mails por fila; 104 unitários + 92 de integração e verificação ao vivo em 2026-10-15; sandboxes reais não exercitados por falta de credenciais; sem commit até autorização).
 - [ ] Admin e CMS implementados.
 - [ ] Editor de landing pages implementado.
-- [ ] Integrações comerciais implementadas e testadas em sandbox.
+- [~] Integrações comerciais: Mercado Pago e SuperFrete implementados e testados contra servidores locais; teste nos sandboxes reais pendente de credenciais.
 - [ ] Segurança, QA, homologação e deploy concluídos.
 
 ## Próxima ação prioritária
-1. Revisar e integrar, com autorização, a branch de backend `claude/e5-checkout` antes de atualizar a base de `codex/e5-checkout`; o Codex não mesclou nem modificou arquivos do backend.
-2. Com o OpenAPI E5 na base, adicionar seus schemas ao gerador do frontend, regenerar `openapi.d.ts`, remover o espelho provisório de `src/types/checkout.ts` e repetir a suíte completa.
+1. Gerar os tipos oficiais do OpenAPI E5, substituir o espelho provisório do checkout e corrigir incompatibilidades exclusivamente no frontend.
+2. Repetir as suítes completas E1–E5, os checks ao vivo e o QA responsivo com PostgreSQL, Fastify, Next e Mailpit locais.
 3. Obter credenciais de teste para validar os sandboxes reais do Mercado Pago e da SuperFrete; até lá, manter explícitos o frete fixture e o pagamento indisponível em desenvolvimento.
 
 ## Registro das integrações
@@ -46,8 +47,10 @@
 | Carrinho e favoritos | Integrado e testado (`/carrinho`, drawer, `/favoritos`, migração local e junção pós-login) | Implementado e testado (E4: `/cart*`, `/me/favorites*`) | Integrado; servidor é a fonte de preço, estoque, desconto e totais |
 | Cupons e campanhas | Integrado (`CouponForm`, `CampaignPanel`) | Implementado e testado (E4: `/cart/coupon`, `/campaigns/active`, admin mínimo) | Loja integrada; UI administrativa continua futura (E6) |
 | Newsletter | Inscrição, confirmação e descadastro integrados | Implementado e testado (E4: inscrição, confirmação, descadastro) | Integrado ponta a ponta com consentimento explícito e Mailpit |
-| Frete | Estimativa na sacola e seleção no checkout implementadas e testadas contra fixture E5 | Implementado em `claude/e5-checkout`; integração à base pendente | Ponta a ponta local com fixture; sandbox SuperFrete real pendente |
-| Checkout e pedidos | Fluxo, retorno e área do cliente implementados e testados | Implementado em `claude/e5-checkout`; integração à base pendente | Validado localmente com pagamento desativado; sandbox Mercado Pago e tipos OpenAPI integrados pendentes |
+| Endereços | CRUD e seleção no checkout implementados e testados | Implementado e testado (E5: `/me/addresses*`) | Reunido localmente; validação definitiva em andamento |
+| Frete | Estimativa na sacola e seleção no checkout implementadas e testadas contra fixture E5 | Implementado e testado (E5: `/shipping/quotes`, SuperFrete + tabela simulada de dev) | Ponta a ponta local com fixture; sandbox SuperFrete real pendente |
+| Checkout e pedidos | Fluxo, retorno e área do cliente implementados e testados | Implementado e testado (E5: `/checkouts*`, `/orders*`, admin `/admin/orders*`) | Reunido localmente; pagamento desativado no QA e tipos oficiais em geração |
+| Pagamento | Retorno, sincronização e novas tentativas implementados | Mercado Pago Checkout Pro e webhook assinados testados com servidor local | Sandbox Mercado Pago real pendente de credenciais |
 | Landing pages | Pendente | Pendente | Não iniciado |
 
 ## Alterações recentes
@@ -77,6 +80,15 @@
 - Verificações finais: frontend lint, TypeScript, build, OpenAPI e **7/7 testes** passaram; backend lint, TypeScript, build, OpenAPI, **89/89 unitários** e **66/66 integrações PostgreSQL** passaram. `test:catalog-live` confirmou 6 produtos/detalhes/imagens; `test:commerce-live` confirmou visitante, persistência, DEMO10, cadastro/junção, quantidade, favorito, newsletter, confirmação e descadastro via Mailpit. A conta/inscrição fictícias foram removidas.
 - QA via Edge/CDP renderizou homepage, sacola e favoritos em 390, 768, 1024 e 1440 px e comprovou ausência de overflow. A skill de navegador interativo não expôs apps/browsers; a inspeção foi feita nas capturas reais do Edge headless. O cache gerado `.next`, bloqueado uma vez pelo OneDrive, foi removido e reconstruído com sucesso.
 - Próximo passo exato: revisão humana do diff e autorização de commit/PR da branch `codex/e4-integracao`; depois, E5 no backend para habilitar checkout, frete, reserva e pedidos.
+
+## Registro factual — Backend E5 (checkout, pagamentos e logística), 2026-10-15 (Claude)
+- Remoto `AimBets/UsRocK` e branch `claude/e5-checkout` (base `36a5d74`, E4 integrada) confirmados. Nenhum arquivo de `frontend/` foi alterado; E1–E4 preservadas (todos os testes anteriores passam).
+- Migração aditiva `0004_checkout`: endereços, cotações de frete, pedidos (número `UR001001`…), itens com cópia de preços, histórico de estados, reservas de estoque, resgates de cupom, pagamentos, eventos de webhook, etiquetas, chaves de idempotência e fila de notificações; medidas de envio opcionais nas variantes e limite de uso por cliente nos cupons.
+- Checkout para clientes com conta: prévia recalculada no servidor, `POST /checkouts` com `Idempotency-Key`, criação atômica com reserva condicional de estoque (expira em 30 min), cupom com trava e limites, cotação de frete vinculada à sacola e ao CEP, total esperado opcional; pedidos com máquina de estados e histórico com autor.
+- Mercado Pago Checkout Pro (modo sandbox, atrás de interface pronta para Bricks): preferência no total exato, webhook com assinatura validada, deduplicação e confirmação somente após consulta à API oficial; valor divergente nunca confirma. SuperFrete: cotação, etiqueta pendente (sem pagamento automático), consulta e webhook assinado. E-mails transacionais por fila com novas tentativas (Mailpit); WhatsApp apenas estruturado, sem envio. Admin mínimo de pedidos com `orders:manage`.
+- Verificações reais: lint, typecheck, build, `openapi:check`, 104 testes unitários e 92 de integração com PostgreSQL (26 novos da E5, incluindo concorrência, webhooks duplicados, expiração e adulteração de preço); teste de mutação; verificação ao vivo com servidor compilado, frete simulado e Mailpit. Dados fictícios removidos.
+- **Não exercitado:** sandboxes reais do Mercado Pago e da SuperFrete — não havia credenciais de teste no ambiente. Integrações vêm desligadas por padrão. Nenhum commit, push ou merge realizado.
+- Pendências: validação nos sandboxes reais (`npm run sandbox:smoke`), checkout de visitante, estorno/pagamento de etiqueta/NF-e (manuais), frete grátis por cupom, medidas reais dos produtos, telas do Codex (checkout, retorno, pedidos, endereços).
 
 ## Registro factual — Backend E4 (sacola e marketing), 2026-10-15 (Claude)
 - Remoto `AimBets/UsRocK` e branch `claude/e4-commerce` (base `e030ad0`) confirmados. Nenhum arquivo de `frontend/` foi alterado; checkout, frete, Mercado Pago e SuperFrete não foram tocados (E5).

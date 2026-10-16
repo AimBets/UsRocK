@@ -13,3 +13,8 @@ export * from "../../modules/marketing/marketing.schema.js";
 export * from "../../modules/cart/cart.schema.js";
 export * from "../../modules/favorites/favorites.schema.js";
 export * from "../../modules/newsletter/newsletter.schema.js";
+export * from "../../modules/addresses/addresses.schema.js";
+export * from "../../modules/orders/orders.schema.js";
+export * from "../../modules/payments/payments.schema.js";
+export * from "../../modules/shipping/shipping.schema.js";
+export * from "../../modules/notifications/notifications.schema.js";

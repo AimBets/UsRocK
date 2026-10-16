@@ -128,6 +128,7 @@ export function toAdminCoupon(row: CouponRow): AdminCoupon {
     startsAt: row.startsAt.toISOString(),
     endsAt: row.endsAt?.toISOString() ?? null,
     usageLimit: row.usageLimit,
+    perCustomerLimit: row.perCustomerLimit,
     timesRedeemed: row.timesRedeemed,
     isActive: row.isActive,
     isDemo: row.isDemo,
@@ -159,6 +160,7 @@ export async function createCoupon(db: Db, body: CreateCouponBody): Promise<Coup
     startsAt: body.startsAt ? new Date(body.startsAt) : new Date(),
     endsAt: body.endsAt ? new Date(body.endsAt) : null,
     usageLimit: body.usageLimit ?? null,
+    perCustomerLimit: body.perCustomerLimit ?? null,
     isActive: body.isActive ?? true,
   };
   assertNoIssues(couponRuleIssues(values));

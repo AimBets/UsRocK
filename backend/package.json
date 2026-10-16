@@ -22,7 +22,8 @@
     "db:seed": "tsx src/db/seed.ts",
     "user:create-admin": "tsx src/cli/create-admin.ts",
     "openapi:generate": "tsx scripts/generate-openapi.ts",
-    "openapi:check": "tsx scripts/generate-openapi.ts --check"
+    "openapi:check": "tsx scripts/generate-openapi.ts --check",
+    "sandbox:smoke": "tsx scripts/sandbox-smoke.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.2",

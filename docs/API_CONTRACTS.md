@@ -1,13 +1,13 @@
 # Contratos de API — UsRock
 
-**Responsável:** Claude. **Estado (E4, 2026-10-15):** convenções transversais (E1), catálogo público (E2), contas/sessão/permissões (E3) e sacola, favoritos, cupons, campanhas e newsletter (E4) implementados e testados no backend; E4 ainda sem commit. Frete, checkout, pedidos e landing pages continuam propostos.
+**Responsável:** Claude. **Estado (E5, 2026-10-15):** convenções transversais (E1), catálogo público (E2), contas/sessão/permissões (E3), sacola/favoritos/cupons/campanhas/newsletter (E4) e endereços, frete, checkout, pedidos, pagamentos e e-mails transacionais (E5) implementados e testados no backend; E5 sem commit. Integrações reais de sandbox (Mercado Pago, SuperFrete) ainda **não exercitadas** por falta de credenciais. Landing pages continuam propostas.
 
 **Fonte de verdade tipada:** `backend/openapi/openapi.json` (OpenAPI 3.1, gerado a partir dos schemas Zod; o CI falha se estiver desatualizado). Em desenvolvimento, documentação interativa em `http://127.0.0.1:3333/docs` e JSON em `/docs/json`. O frontend pode gerar tipos com `openapi-typescript` a partir desse arquivo. Nos componentes do documento, use os schemas sem sufixo (ex.: `ErrorResponse`) para respostas; os sufixados `…Input` descrevem o formato aceito em requisições e são gerados pela biblioteca.
 
 ## Arquitetura acordada
 - Serviço próprio em `backend/` (Node.js 24, TypeScript, Fastify 5, PostgreSQL 17, Drizzle ORM, Zod 4, OpenAPI). Aprovado pelo responsável do projeto em 2026-10-13.
 - O Next.js encaminhará `/api/*` ao backend (rewrite), mantendo cookies de sessão no mesmo domínio da loja. Solicitação registrada ao Codex em `docs/HANDOFF_CLAUDE.md`; ainda não aplicada.
-- Integrações aprovadas para fases futuras: Mercado Pago Checkout Pro em sandbox (Bricks depois, se necessário), Mailpit em desenvolvimento (provedor transacional a definir), WhatsApp pela API oficial. Nada disso está implementado.
+- Integrações: Mercado Pago Checkout Pro (sandbox) e SuperFrete implementados na E5 atrás de interfaces e desligados por padrão; e-mail transacional via Mailpit em desenvolvimento (provedor de produção a definir); WhatsApp apenas estruturado (sem envio).
 
 ## Convenções (acordadas e implementadas na E1)
 | Tema | Regra | Situação |
@@ -24,7 +24,7 @@
 | CORS | Somente origens em `CORS_ORIGINS`, com credenciais; cabeçalhos aceitos: `Content-Type`, `Idempotency-Key`, `If-Match`, `X-Request-Id`; expostos: `X-Request-Id`, `ETag`, `Retry-After` | Implementado e testado |
 | CSRF | Requisições `POST/PUT/PATCH/DELETE` com `Origin` fora da lista recebem `403 FORBIDDEN`; sem parser `text/plain`; cookie de sessão `HttpOnly`, `SameSite=Lax`, `Secure` em produção. Chamadas servidor-a-servidor (webhooks) não enviam `Origin` e serão autenticadas por assinatura | Verificação de Origin implementada e testada |
 | Concorrência | Recursos editáveis (landing pages, produtos no admin) usarão `ETag` + `If-Match`; divergência → `412 PRECONDITION_FAILED` | Código de erro reservado; uso a partir da E6/E7 |
-| Idempotência | `POST` com efeito financeiro (`/checkouts`) exigirá `Idempotency-Key` | Cabeçalho já aceito pelo CORS; uso na E5 |
+| Idempotência | `POST /checkouts` exige `Idempotency-Key` (ver E5) | Implementado e testado (E5) |
 
 ### Envelope de erro (`ErrorResponse`)
 ```json
@@ -232,16 +232,119 @@ Visitantes continuam com favoritos no navegador; após login, importar com `/me/
 
 Valores em centavos (`amountOffMinor`, `maxDiscountMinor`, `minSubtotalMinor`); regras cruzadas validadas (`400` por campo), código/slug duplicado → `409 already_exists`, referência inexistente → `400 not_found`. Cada alteração gera log com `actorId` (trilha persistente de auditoria: E6). A interface do admin não existe ainda.
 
-## Modelo de dados (E2 criado; E3+ planejado)
+### Endereços, frete, checkout, pedidos e pagamentos (E5)
+**Status:** implementado e testado (unitário + 26 cenários de integração com PostgreSQL real e servidores HTTP locais que imitam Mercado Pago e SuperFrete + verificação ao vivo com servidor compilado, tabela de frete simulada e Mailpit, 2026-10-15). Migração `0004_checkout` (aditiva). **Credenciais reais de sandbox não estavam disponíveis: a comunicação com os sandboxes reais ainda não foi exercitada** (`npm run sandbox:smoke` fará isso quando houver credenciais). Schemas: `Address`, `ShippingQuote`, `ShippingOption`, `CheckoutSummary`, `CheckoutResult`, `PaymentSession`, `Order`, `OrderItem`, `OrderSummary`, `OrderList`, `OrderStatus`, `AdminOrder`, `AdminOrderSummary`.
+
+#### Fluxo da loja (o que o frontend chama)
+1. Sacola (E4) → `POST /shipping/quotes { postalCode }` (visitante ou cliente) → opções de frete com `serviceId`, preço e prazo.
+2. Login obrigatório para concluir. `GET/POST /me/addresses` (escolher ou cadastrar endereço).
+3. Cotação para o **CEP do endereço escolhido** → `POST /checkouts/preview { addressId, quoteId, serviceId }` → resumo com totais do servidor.
+4. `POST /checkouts` com cabeçalho **`Idempotency-Key`** e `{ addressId, quoteId, serviceId, expectedTotal? }` → `201 { order, payment }`.
+5. Redirecionar para `payment.checkoutUrl` (Mercado Pago). Se `payment` for `null`, mostrar o pedido com botão "Pagar" → `POST /orders/{id}/payment`.
+6. Página de retorno **`/checkout/retorno?pedido={orderId}`** (o Mercado Pago volta para ela em sucesso, pendência ou falha): chamar `POST /orders/{id}/payment/sync` e depois exibir `GET /orders/{id}`. **Nunca** usar os parâmetros que o Mercado Pago acrescenta na URL (`status`, `collection_status`…) para decidir nada.
+7. Área do cliente: `GET /orders` e `GET /orders/{id}` (link dos e-mails: `/conta/pedidos/{id}`).
+
+#### Regras comerciais (sempre no servidor)
+- Preço, estoque, cupom, frete e totais são recalculados no servidor a cada prévia e no `POST /checkouts`. Campos extras enviados pelo cliente (preço, total, frete) são **ignorados** (testado). `expectedTotal` serve só para o cliente confirmar o valor que viu: se divergir, `409 total_changed` e nada é criado.
+- `total = subtotal − desconto + frete`. O frete vem **somente** da cotação armazenada (`quoteId`), que vale `SHIPPING_QUOTE_TTL_MINUTES` (padrão 30) e pertence à sacola, ao conteúdo exato da sacola (variantes e quantidades) e ao CEP.
+- A sacola precisa estar sem problemas bloqueantes (`unavailable`, `out_of_stock`, `insufficient_stock`) e com cupom válido; caso contrário `409`.
+- Criação atômica do pedido: trava a sacola → recalcula → **reserva estoque** (incrementa `reserved` só se `físico − reservado ≥ quantidade`, por variante em ordem fixa) → resgata o cupom (trava a linha do cupom; respeita `usageLimit` e `perCustomerLimit`) → grava cópias imutáveis (itens, preços, endereço, frete, cupom) → histórico → e-mail na fila → **esvazia a sacola**. Qualquer falha desfaz tudo. Concorrência testada: 4 compras simultâneas para 2 unidades → 2×201 + 2×409.
+- Reserva: `CHECKOUT_RESERVATION_MINUTES` (padrão 30). A preferência do Mercado Pago expira no mesmo instante. Ao expirar, a tarefa em segundo plano consulta o Mercado Pago uma última vez; sem pagamento aprovado, o pedido vira `expired` e estoque e uso do cupom são devolvidos.
+- Pagamento aprovado consome a reserva (`físico` e `reservado` diminuem; movimento `sale`). Aprovação tardia de pedido expirado: se ainda houver estoque, o pedido é pago normalmente; senão fica `expired` com `attentionReason = paid_after_expiry_without_stock` (estorno manual).
+- Número do pedido: `UR001001`, `UR001002`… (sequência no banco).
+- `isDemo: true` quando há item do catálogo demonstrativo (os e-mails avisam "Pedido de DEMONSTRAÇÃO").
+
+#### Estados do pedido (`OrderStatus`)
+| Estado | Significado | Próximos |
+|---|---|---|
+| `pending_payment` | Criado, estoque reservado, aguardando o Mercado Pago | `paid`, `cancelled`, `expired` |
+| `paid` | Pagamento aprovado **confirmado na API do Mercado Pago** | `in_fulfillment`, `shipped`, `cancelled`, `refunded` |
+| `in_fulfillment` | Em separação (operador) | `shipped`, `cancelled`, `refunded` |
+| `shipped` | Postado (SuperFrete ou operador) | `delivered`, `refunded` |
+| `delivered` | Entregue | `refunded` |
+| `expired` | Reserva venceu sem pagamento | `paid` (aprovação tardia com estoque) |
+| `cancelled` / `refunded` | Finais | — |
+
+`statusLabel` traz o texto pt-BR. `canPay` e `canCancel` dizem quais botões mostrar. `payment.status` (estado no provedor): `created` (checkout aberto), `pending`, `in_process`, `approved`, `rejected`, `cancelled`, `refunded`, `charged_back`. Pagamento recusado mantém o pedido em `pending_payment` com `canPay: true` até a reserva vencer.
+
+#### Rotas
+Todas com `Cache-Control: no-store`. Rotas de cliente exigem sessão (`401` antes de qualquer validação).
+
+| Método e rota | Corpo | Sucesso | Erros específicos (`details[].code`) |
+|---|---|---|---|
+| `GET /api/v1/me/addresses` | — | `200 { data: Address[] }` (padrão primeiro) | `401` |
+| `POST /api/v1/me/addresses` | `{ label?, recipientName, recipientDocument (CPF), recipientPhone, postalCode, street, number, complement?, district, city, state (UF), isDefault? }` | `201 Address` | `400` por campo (CPF com dígito verificador, CEP 8 dígitos, UF válida, telefone com DDD); `409 addresses_full` (máx. 10) |
+| `PATCH /api/v1/me/addresses/{id}` | campos parciais | `200 Address` | `404` (inclusive de outro cliente) |
+| `DELETE /api/v1/me/addresses/{id}` | — | `204` (idempotente; o mais antigo vira padrão) | `401` |
+| `POST /api/v1/shipping/quotes` | `{ postalCode }` | `200 ShippingQuote` | `409 cart_empty`, `cart_has_issues` (+ código por item); `400 shipping_rejected`; `503 shipping_unavailable`; `429` (`SHIPPING_QUOTE_RATE_LIMIT_MAX`/15 min por IP) |
+| `POST /api/v1/checkouts/preview` | `{ addressId, quoteId, serviceId }` | `200 CheckoutSummary` (sem efeitos) | ver abaixo |
+| `POST /api/v1/checkouts` | `{ addressId, quoteId, serviceId, expectedTotal? }` + `Idempotency-Key` | `201 { order: Order, payment: PaymentSession \| null }` | ver abaixo; `400` sem/inválida `Idempotency-Key` |
+| `GET /api/v1/orders` | `?limit&cursor` | `200 { data: OrderSummary[], pageInfo }` | `401` |
+| `GET /api/v1/orders/{id}` | — | `200 Order` | `404` (pedido de outro cliente também) |
+| `POST /api/v1/orders/{id}/payment` | `{}` | `200 PaymentSession` (reaproveita a sessão aberta) | `409 order_not_payable`; `503 payment_unavailable` |
+| `POST /api/v1/orders/{id}/payment/sync` | `{}` | `200 Order` após consultar o Mercado Pago | `503 payment_unavailable`; `429` (10/min) |
+| `POST /api/v1/orders/{id}/cancel` | `{}` | `200 Order` (`cancelled`; estoque e cupom devolvidos) | `409 order_not_cancellable` (só `pending_payment`) |
+
+Erros de `POST /checkouts` e `/checkouts/preview`: `400 address_not_found`, `shipping_option_invalid`; `409 cart_empty`, `cart_has_issues` (+ `insufficient_stock`/`out_of_stock`/`unavailable` em `cart.items.N`), `insufficient_stock` (esgotou durante a criação), cupom em `cart.coupon` (`coupon_expired`, `coupon_usage_exhausted`, `coupon_not_applicable`, `coupon_minimum_not_met`, `coupon_invalid`), `shipping_quote_expired` (vencida, de outra sacola ou sacola alterada: cotar de novo), `shipping_quote_mismatch` (cotação de outro CEP), `total_changed`, `idempotency_key_reused`, `idempotency_in_progress`. Se o Mercado Pago falhar, o pedido é criado mesmo assim com `payment: null`.
+
+**Idempotência:** gere uma `Idempotency-Key` (16–128 caracteres `[A-Za-z0-9_:-]`, ex.: UUID) ao entrar na etapa de confirmação e reutilize-a se repetir o envio (duplo clique, timeout). Mesma chave + mesmo corpo → mesma resposta (`Idempotent-Replayed: true`) por 24 h; corpo diferente → `409 idempotency_key_reused`. Erros de regra (estoque, cupom…) **não** ficam gravados: a mesma chave pode ser reenviada após corrigir a sacola.
+
+Exemplo de `Order` (abreviado):
+```json
+{ "id": "8a0c…", "number": "UR001001", "status": "pending_payment", "statusLabel": "Aguardando pagamento", "isDemo": true,
+  "items": [{ "productName": "Nocturne Wings Oversized", "size": "M", "sku": "DEMO-…-M", "quantity": 2,
+              "unitPrice": { "amountMinor": 12990, "currencyCode": "BRL" }, "lineTotal": { "amountMinor": 25980, "currencyCode": "BRL" },
+              "image": { "url": "/images/product-raven.png", "alt": "…" } }],
+  "coupon": { "code": "ROCK10", "discount": { "amountMinor": 2598, "currencyCode": "BRL" } },
+  "shipping": { "provider": "superfrete", "serviceId": "1", "name": "PAC", "carrier": "Correios", "price": { "amountMinor": 2250, "currencyCode": "BRL" },
+                "deliveryDays": { "min": 5, "max": 7 }, "tracking": null,
+                "address": { "recipientName": "…", "recipientDocumentMasked": "***.***.247-25", "recipientPhoneMasked": "(21) *****-4321",
+                             "postalCode": "20040002", "city": "Rio de Janeiro", "state": "RJ" } },
+  "totals": { "subtotal": { "amountMinor": 25980 }, "discount": { "amountMinor": 2598 }, "shipping": { "amountMinor": 2250 }, "total": { "amountMinor": 25632 } },
+  "payment": { "provider": "mercado_pago", "environment": "sandbox", "status": "created", "statusDetail": null, "updatedAt": "…" },
+  "reservationExpiresAt": "2026-10-15T21:30:00.000Z", "canPay": true, "canCancel": true,
+  "history": [{ "status": "pending_payment", "at": "…" }], "createdAt": "…", "paidAt": null, "cancelledAt": null }
+```
+CPF e telefone completos **nunca** são devolvidos pela API (só mascarados).
+
+#### Mercado Pago (Checkout Pro, sandbox)
+- `MERCADO_PAGO_MODE`: `disabled` (padrão), `sandbox` (credenciais de teste), `production` (só com `NODE_ENV=production`). Token e segredo só no ambiente do servidor.
+- Preferência criada no servidor (`POST /checkout/preferences` com `X-Idempotency-Key = usrock-{orderId}-{tentativa}`): **uma linha** com o total exato do pedido, `external_reference = orderId`, `back_urls` → `/checkout/retorno?pedido={id}`, `expires`/`expiration_date_to` = fim da reserva, `notification_url` quando configurada; `auto_return` só com URL https. Em sandbox usa `sandbox_init_point`.
+- **Confirmação somente pelo servidor:** webhook `POST /api/v1/webhooks/mercadopago` validado por `x-signature` (manifesto `id:{data.id};request-id:{x-request-id};ts:{ts};`, HMAC-SHA256 com o segredo, comparação em tempo constante — mesma lógica do validador do SDK oficial) → o pagamento é **consultado na API oficial** (`GET /v1/payments/{id}`) → aplicado. Valor ou moeda diferente do pedido → **não confirma** (`attentionReason = payment_amount_mismatch`). Notificações duplicadas são reconhecidas (`webhook_events`) e todo o processamento é idempotente sob trava do pedido. Falha temporária → `500` para o Mercado Pago reenviar.
+- Arquitetura pronta para Bricks: o checkout depende só da interface `PaymentGateway` (`createCheckout`, `getPayment`, `findPaymentsByOrder`).
+- Teste em sandbox (quando houver credenciais): comprador de teste do painel, cartões de teste com titular `APRO` (aprovado), `OTHE` (recusado), `CONT` (pendente).
+
+#### SuperFrete
+- `SHIPPING_PROVIDER`: `disabled` (padrão), `fixture` (tabela **simulada** de desenvolvimento, `isSimulated: true`, nomes "(simulado)"; recusada em produção; CEP `99999999` simula falha), `superfrete` (API oficial; `SUPERFRETE_ENV=sandbox` → `https://sandbox.superfrete.com`).
+- Cotação: `POST /api/v0/calculator` com `products` (peso kg/medidas cm por item; variantes sem medidas usam `SHIPPING_DEFAULT_*`), serviços `SUPERFRETE_SERVICES` (1 PAC, 2 SEDEX, 17 Mini Envios), valor declarado = subtotal com desconto. Serviços com erro são omitidos.
+- Etiquetas (operador): `POST /api/v0/cart` cria a etiqueta **pendente** no carrinho da SuperFrete; o **pagamento da etiqueta (debita a carteira) não é automatizado** nesta fase. `GET /api/v0/order/info/{id}` para status/rastreio. Webhook `POST /api/v1/webhooks/superfrete` validado por `X-ME-Signature` (HMAC-SHA256 do corpo bruto; hex ou base64, pois a documentação não define) → estado reconsultado na API → `posted` move o pedido para `shipped` (e-mail com rastreio), `delivered` para `delivered`.
+- Envio com "declaração de conteúdo" (`non_commercial: true`): **não há emissão de NF-e** integrada.
+
+#### E-mails transacionais e WhatsApp
+- Fila transacional (`notifications`): gravada na mesma transação da mudança; enviada pela tarefa em segundo plano (Mailpit em dev) com até 5 tentativas (1, 5, 30, 120, 360 min) e chave de deduplicação. Modelos: pedido recebido (aguardando pagamento), pagamento aprovado, mudança de estado (em separação, enviado com rastreio, entregue, cancelado, expirado, reembolsado). Logs nunca trazem o destinatário.
+- WhatsApp: apenas a interface (`WhatsAppSender`) e o canal na fila; `WHATSAPP_MODE=disabled`; **nenhuma mensagem é enviada**. Exigirá opt-in específico (E8).
+
+#### Administração de pedidos (permissão `orders:manage`: `operator` e `admin`) — base para o painel E6
+| Rota | Uso |
+|---|---|
+| `GET /api/v1/admin/orders?status=&attention=true&limit&cursor` | Lista com cliente e `attentionReason` |
+| `GET /api/v1/admin/orders/{id}` | `AdminOrder`: cliente, pagamentos, etiquetas, histórico com autor (`actor`, `actorUserId`), `allowedTransitions` |
+| `POST /api/v1/admin/orders/{id}/transitions` | `{ to: in_fulfillment \| shipped \| delivered \| cancelled, note? }`. Cancelar pago devolve estoque e marca `refund_required` (estorno manual no Mercado Pago) |
+| `POST /api/v1/admin/orders/{id}/shipments` | Cria etiqueta pendente na SuperFrete (pedido pago; remetente `SHIPPING_SENDER_*`) |
+| `POST /api/v1/admin/orders/{id}/shipments/{shipmentId}/sync` | Reconsulta status/rastreio |
+
+`attentionReason`: `payment_amount_mismatch`, `paid_after_expiry_without_stock`, `paid_after_cancellation`, `chargeback`, `refund_required`. Estornos e pagamento de etiquetas não são automatizados (ação financeira manual).
+
+## Modelo de dados (E2–E5 criados)
 Cada domínio terá suas tabelas Drizzle em `backend/src/modules/<domínio>/`. Convenções: UUID, `snake_case`, `created_at`/`updated_at` em `timestamptz`, valores em centavos (`*_minor`), e-mails/slugs em `citext` (extensão criada na migração `0000_init`).
 
 | Domínio | Entidades principais | Fase |
 |---|---|---|
 | Catálogo | `products`, `product_variants` (SKU, tamanho/cor, preço e preço anterior em centavos), `categories`, `collections`, `product_collections`, `product_media` | **Criado na E2** (migração `0001_catalog`) |
-| Estoque | `inventory_levels` (físico/reservado/limite de estoque baixo) e `inventory_movements` (histórico) **criados na E2**; `stock_reservations` (com expiração) na E5 | E2/E5 |
-| Contas e clientes | `users`, `sessions` (hash do token), `password_reset_tokens`, `consents` **criados na E3** (migração `0002_accounts`); `addresses` e perfil do cliente | E3 / E5 |
+| Estoque | `inventory_levels` (físico/reservado/limite de estoque baixo) e `inventory_movements` (histórico) **criados na E2**; `stock_reservations` (com expiração) e medidas de envio nas variantes **criados na E5** | E2/E5 |
+| Contas e clientes | `users`, `sessions` (hash do token), `password_reset_tokens`, `consents` **criados na E3** (migração `0002_accounts`); `addresses` **criado na E5** | E3 / E5 |
 | Carrinho e marketing | `carts` (visitante por hash de token ou conta), `cart_items` (quantidade 1–10, preço de referência), `coupons`, `campaigns`, `favorites`, `newsletter_subscriptions` + `newsletter_events` (dupla confirmação, trilha de consentimento) | **Criado na E4** (migração `0003_commerce`) |
-| Pedidos e pagamentos | `orders` (cópia de preços/endereço no momento da compra), `order_items`, `order_status_history`, `payments`, `shipments`, `webhook_events` (chave única por evento do provedor), `idempotency_keys` | E5 |
+| Pedidos e pagamentos | `orders` (cópia de preços/endereço/frete/cupom, sequência `UR…`), `order_items`, `order_status_history`, `stock_reservations`, `coupon_redemptions`, `shipping_quotes`, `payments`, `shipments`, `webhook_events` (chave única por evento do provedor), `idempotency_keys`, `notifications` (fila) | **Criado na E5** (migração `0004_checkout`) |
 | Operação | `audit_log` (quem, o quê, antes/depois, sem dados pessoais desnecessários) | E6 |
 | Landing pages | `landing_pages` (slug, status `draft`/`scheduled`/`published`/`archived`, versão publicada), `landing_page_versions` (documento JSON imutável com `schemaVersion`, autor, data), `media_assets` | E7 |
 | CRM e WhatsApp | segmentos, interações, opt-ins de WhatsApp | E8 |
@@ -262,9 +365,12 @@ Landing pages: cada salvamento cria uma versão imutável; o documento JSON tem 
 | Campanhas | Campanhas vigentes | `GET /api/v1/campaigns/active` | **Implementado e testado (E4)** |
 | Newsletter | Inscrição, confirmação, descadastro | `/api/v1/newsletter/subscriptions`, `/confirm`, `/unsubscribe` | **Implementado e testado (E4)** |
 | Admin marketing | Cupons e campanhas | `/api/v1/admin/coupons`, `/api/v1/admin/campaigns` (+ `/{id}`) | **Implementado e testado (E4)**; UI pendente |
-| Frete | Cotação por CEP/itens | `POST /api/v1/shipping/quotes` | Proposta (E5) |
-| Checkout | Iniciar pagamento | `POST /api/v1/checkouts` | Proposta (E5) |
-| Pedidos | Status | `GET /api/v1/orders/{id}` | Proposta (E5) |
+| Endereços | Endereços de entrega | `/api/v1/me/addresses`, `/me/addresses/{id}` | **Implementado e testado (E5)** |
+| Frete | Cotação por CEP da sacola | `POST /api/v1/shipping/quotes` | **Implementado e testado (E5)**; sandbox real pendente de credenciais |
+| Checkout | Prévia e criação do pedido + pagamento | `POST /api/v1/checkouts/preview`, `POST /api/v1/checkouts` | **Implementado e testado (E5)** |
+| Pedidos | Lista, detalhe, pagar, sincronizar, cancelar | `/api/v1/orders`, `/orders/{id}`, `/orders/{id}/payment`, `/payment/sync`, `/cancel` | **Implementado e testado (E5)** |
+| Webhooks | Mercado Pago e SuperFrete | `POST /api/v1/webhooks/mercadopago`, `/webhooks/superfrete` | **Implementado e testado (E5)** com servidores locais; não exercitado com os provedores reais |
+| Admin pedidos | Lista, detalhe, transições, etiquetas | `/api/v1/admin/orders` (+ `/{id}`, `/transitions`, `/shipments`) | **Implementado e testado (E5)**; UI pendente (E6) |
 | Landing pages | Listar e editar rascunhos | `GET/POST /api/v1/admin/landing-pages` | Proposta (E7) |
 | Landing pages | Publicação e versões | a definir | Proposta (E7) |
 
@@ -279,7 +385,7 @@ Landing pages: cada salvamento cria uma versão imutável; o documento JSON tem 
 - Frontend consumidor e teste executado:
 
 ## Integrações externas
-Mercado Pago, SuperFrete, WhatsApp e email são responsabilidades do backend. Nenhum token ficará no cliente. Eventos assíncronos deverão considerar webhooks validados, idempotência e retries.
+Mercado Pago, SuperFrete, WhatsApp e email são responsabilidades do backend. Nenhum token fica no cliente. Webhooks validados por assinatura, idempotência e novas tentativas implementados na E5 (ver seção E5).
 
 ## Requisitos descobertos pela homepage — propostas para consolidação
 
