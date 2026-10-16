@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, LockKeyhole, ShoppingBag, Truck } from "lucide-react";
 import { formatMoney } from "@/lib/format";
 import { useStorefront } from "@/components/storefront/storefront-provider";
+import { ShippingEstimator } from "@/components/checkout/shipping-estimator";
 import { CartLineItem } from "./cart-line-item";
 import { CouponForm } from "./coupon-form";
 
@@ -38,11 +39,12 @@ export function CartPage() {
         <p className="eyebrow">Resumo</p>
         <div className="order-summary-row"><span>{cart.itemCount} {cart.itemCount === 1 ? "item" : "itens"}</span><strong>{formatMoney(cart.totals.subtotal)}</strong></div>
         <div className="order-summary-row is-muted"><span>Descontos</span><span>{cart.totals.discount.amountMinor ? `− ${formatMoney(cart.totals.discount)}` : "—"}</span></div>
-        <div className="order-summary-row is-muted"><span>Frete</span><span>Calculado no checkout E5</span></div>
+        <div className="order-summary-row is-muted"><span>Frete</span><span>Calculado na próxima etapa</span></div>
         <div className="order-summary-total"><span>Total atual</span><strong>{formatMoney(cart.totals.total)}</strong></div>
         <CouponForm />
-        <button className="button-primary mt-6 w-full" disabled type="button"><LockKeyhole size={16} /> Checkout aguardando E5</button>
-        <div className="summary-note"><Truck size={18} /><p>Preço, estoque, elegibilidade e desconto vêm do servidor. Frete e checkout serão disponibilizados na E5.</p></div>
+        <ShippingEstimator />
+        <Link aria-disabled={cart.hasIssues || busy} className={`button-primary mt-6 w-full ${cart.hasIssues || busy ? "is-disabled" : ""}`} href={cart.hasIssues || busy ? "/carrinho" : "/checkout"}><LockKeyhole size={16} /> Ir para checkout</Link>
+        <div className="summary-note"><Truck size={18} /><p>Preço, estoque, elegibilidade e desconto vêm do servidor. O frete entra no total somente na prévia do checkout.</p></div>
         <Link className="text-link mt-6" href="/catalogo">Continuar comprando <ArrowRight size={14} /></Link>
       </aside>
     </div>

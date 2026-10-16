@@ -3,16 +3,27 @@ import type { ApiErrorResponse } from "@/types/catalog";
 const DEFAULT_API_ORIGIN = "http://127.0.0.1:3333";
 
 export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly requestId?: string;
+  readonly details?: ApiErrorResponse["error"]["details"];
+  readonly retryAfter?: string | null;
+
   constructor(
-    public readonly status: number,
-    public readonly code: string,
+    status: number,
+    code: string,
     message: string,
-    public readonly requestId?: string,
-    public readonly details?: ApiErrorResponse["error"]["details"],
-    public readonly retryAfter?: string | null,
+    requestId?: string,
+    details?: ApiErrorResponse["error"]["details"],
+    retryAfter?: string | null,
   ) {
     super(message);
     this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+    this.requestId = requestId;
+    this.details = details;
+    this.retryAfter = retryAfter;
   }
 }
 
