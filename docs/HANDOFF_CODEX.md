@@ -2,6 +2,17 @@
 
 > Escreva aqui o que o frontend concluiu, de quais contratos depende e o que o backend precisa fornecer.
 
+## Última entrega — integração frontend/backend E5 definitiva (2026-10-16)
+- Situação: branch `codex/e5-checkout`, fora de `main`, com o backend E5 reunido localmente no merge `74f6416`. A geração oficial substituiu o espelho provisório de checkout sem exigir alteração em `backend/`; nenhum commit, push ou merge adicional foi realizado.
+- Contratos: `generate-openapi-types.mjs` passou a selecionar os schemas E5 de endereço, frete, checkout, pagamento e pedidos, além dos cinco corpos de requisição correspondentes. `src/types/checkout.ts` agora contém somente aliases derivados de `openapi.d.ts`; criação e atualização de endereço e prévia/criação de checkout preservam suas diferenças contratuais.
+- Verificação de frontend: `openapi:check`, ESLint, TypeScript, build Next 16.4 e **11/11 testes** passaram. O build manteve checkout, retorno, endereços e pedidos como rotas dinâmicas protegidas por sessão.
+- Verificação de backend integrado: lint, TypeScript, build, `openapi:check`, **104/104 testes unitários** e **92/92 testes de integração PostgreSQL** passaram. Migração e seed E5 foram reaplicados com sucesso.
+- Verificação ao vivo: `test:catalog-live`, `test:commerce-live` e `test:checkout-live` passaram contra PostgreSQL, Fastify, Next e Mailpit locais, com `SHIPPING_PROVIDER=fixture`, Mercado Pago desligado e jobs desligados. Foram confirmados catálogo, comércio E4, CRUD/máscaras de endereço, falha e fixture de frete, prévia, pedido, idempotência, pagamento indisponível, listagem e cancelamento.
+- QA responsivo: `test:responsive-live` e `test:checkout-responsive-live` passaram em **390, 768, 1024 e 1440 px**. Capturas de revisão, detalhe e retorno foram inspecionadas; não houve overflow horizontal nem aprovação baseada no retorno do navegador.
+- Higiene: API e Next temporários foram encerrados. Os dois pedidos, três contas e uma inscrição fictícia criados nesta rodada foram removidos em transação; a consulta final encontrou zero registros para os três e-mails exatos. PostgreSQL e Mailpit permaneceram ativos no Docker Desktop.
+- Limitação real: sandboxes do Mercado Pago e da SuperFrete continuam sem validação por falta de credenciais. O frete validado é explicitamente fixture e o pagamento permanece indisponível nesse ambiente.
+- Próximo passo exato: obter credenciais de teste e executar `npm run sandbox:smoke` dentro de `backend/`, mais a compra de sandbox e webhooks; em paralelo, submeter o diff atual para revisão/commit/PR. A próxima etapa funcional de frontend é o painel administrativo E6, somente após autorização e contratos do backend.
+
 ## Última entrega — frontend E5 validado contra a branch do backend (2026-10-16)
 - Situação: branch `codex/e5-checkout`, fora de `main`, com UI de checkout, frete, endereços e pedidos implementada. A base da branch ainda está no merge E4 `a5917f7`; o backend E5 permanece separado em `claude/e5-checkout` (`a336bbd`). Nenhum arquivo de `backend/` foi alterado, mesclado ou commitado pelo Codex.
 - Fluxo: `/carrinho` ganhou estimativa por CEP e acesso ao checkout; `/checkout` exige sessão e conduz endereço → cotação → modalidade → prévia autoritativa → revisão → criação idempotente. A chave UUID nasce ao entrar na confirmação e é mantida em reenvios; `total_changed` recarrega a prévia e exige nova confirmação; cotação expirada, problema de sacola/estoque e pagamento indisponível têm recuperação própria.

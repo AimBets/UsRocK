@@ -64,7 +64,7 @@ export async function getOrCreateCart(
 }
 
 /** Serialises concurrent changes to the same cart. */
-async function lockCart(tx: DbTransaction, cartId: string): Promise<CartRow> {
+export async function lockCart(tx: DbTransaction, cartId: string): Promise<CartRow> {
   const [row] = await tx.select().from(carts).where(eq(carts.id, cartId)).for("update");
   if (!row) throw errors.notFound("Sacola não encontrada.");
   return row;
@@ -125,7 +125,7 @@ export async function mergeGuestCart(db: Db, guestToken: string, userId: string)
 
 // --- Reading and pricing ---------------------------------------------------------------------
 
-async function loadLines(db: DbExecutor, cartId: string) {
+export async function loadLines(db: DbExecutor, cartId: string) {
   return db.query.cartItems.findMany({
     where: eq(cartItems.cartId, cartId),
     orderBy: [asc(cartItems.createdAt), asc(cartItems.id)],
@@ -145,9 +145,9 @@ async function loadLines(db: DbExecutor, cartId: string) {
   });
 }
 
-type LoadedLine = Awaited<ReturnType<typeof loadLines>>[number];
+export type LoadedLine = Awaited<ReturnType<typeof loadLines>>[number];
 
-function toPricingLine(line: LoadedLine): PricingLine {
+export function toPricingLine(line: LoadedLine): PricingLine {
   const { variant } = line;
   const stock = variant.inventory;
   return {

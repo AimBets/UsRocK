@@ -29,6 +29,13 @@
       "when": 1792036725783,
       "tag": "0003_commerce",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792097048997,
+      "tag": "0004_checkout",
+      "breakpoints": true
     }
   ]
 }

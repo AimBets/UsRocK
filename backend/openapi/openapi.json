@@ -15,6 +15,26 @@
       }
     },
     "schemas": {
+      "MoneyInput": {
+        "type": "object",
+        "properties": {
+          "amountMinor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Valor em centavos."
+          },
+          "currencyCode": {
+            "type": "string",
+            "const": "BRL",
+            "description": "ISO 4217. A loja opera somente em BRL."
+          }
+        },
+        "required": [
+          "amountMinor",
+          "currencyCode"
+        ]
+      },
       "ErrorDetailInput": {
         "type": "object",
         "properties": {
@@ -172,24 +192,99 @@
           "message"
         ]
       },
-      "MoneyInput": {
+      "AddressInput": {
         "type": "object",
         "properties": {
-          "amountMinor": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991,
-            "description": "Valor em centavos."
-          },
-          "currencyCode": {
+          "id": {
             "type": "string",
-            "const": "BRL",
-            "description": "ISO 4217. A loja opera somente em BRL."
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recipientName": {
+            "type": "string"
+          },
+          "recipientDocumentMasked": {
+            "type": "string",
+            "description": "CPF mascarado (`***.***.789-09`). O número completo nunca é devolvido."
+          },
+          "recipientPhoneMasked": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "8 dígitos."
+          },
+          "street": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "complement": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "district": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
           }
         },
         "required": [
-          "amountMinor",
-          "currencyCode"
+          "id",
+          "label",
+          "recipientName",
+          "recipientDocumentMasked",
+          "recipientPhoneMasked",
+          "postalCode",
+          "street",
+          "number",
+          "complement",
+          "district",
+          "city",
+          "state",
+          "isDefault",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AddressListInput": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressInput"
+            }
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "PageInfoInput": {
@@ -1045,6 +1140,1249 @@
           "skipped"
         ]
       },
+      "OrderStatusInput": {
+        "type": "string",
+        "enum": [
+          "pending_payment",
+          "paid",
+          "in_fulfillment",
+          "shipped",
+          "delivered",
+          "cancelled",
+          "expired",
+          "refunded"
+        ]
+      },
+      "OrderItemInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "productSlug": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "alt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url",
+                  "alt"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unitPrice": {
+            "description": "Preço unitário no momento da compra (cópia imutável).",
+            "$ref": "#/components/schemas/MoneyInput"
+          },
+          "compareAtUnitPrice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "lineTotal": {
+            "$ref": "#/components/schemas/MoneyInput"
+          },
+          "isDemo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "productId",
+          "productSlug",
+          "productName",
+          "variantId",
+          "sku",
+          "size",
+          "color",
+          "image",
+          "unitPrice",
+          "compareAtUnitPrice",
+          "quantity",
+          "lineTotal",
+          "isDemo"
+        ]
+      },
+      "OrderShippingAddressInput": {
+        "type": "object",
+        "properties": {
+          "recipientName": {
+            "type": "string"
+          },
+          "recipientDocumentMasked": {
+            "type": "string"
+          },
+          "recipientPhoneMasked": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "complement": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "district": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipientName",
+          "recipientDocumentMasked",
+          "recipientPhoneMasked",
+          "postalCode",
+          "street",
+          "number",
+          "complement",
+          "district",
+          "city",
+          "state"
+        ]
+      },
+      "OrderPaymentInput": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "production"
+            ],
+            "description": "`sandbox` = pagamento de teste, sem cobrança real."
+          },
+          "status": {
+            "type": "string",
+            "description": "Estado no provedor: `created` (checkout aberto, sem pagamento), `pending`, `in_process`, `approved`, `rejected`, `cancelled`, `refunded`, `charged_back`."
+          },
+          "statusDetail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "provider",
+          "environment",
+          "status",
+          "statusDetail",
+          "updatedAt"
+        ]
+      },
+      "OrderTrackingInput": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "carrier": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "code",
+          "carrier"
+        ]
+      },
+      "OrderInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "number": {
+            "type": "string",
+            "description": "Número exibido ao cliente, ex.: `UR001001`."
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatusInput"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "description": "Pedido com itens do catálogo demonstrativo."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemInput"
+            }
+          },
+          "coupon": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "discount": {
+                    "$ref": "#/components/schemas/MoneyInput"
+                  }
+                },
+                "required": [
+                  "code",
+                  "discount"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shipping": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "serviceId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "deliveryDays": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              },
+              "address": {
+                "$ref": "#/components/schemas/OrderShippingAddressInput"
+              },
+              "tracking": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OrderTrackingInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "provider",
+              "serviceId",
+              "name",
+              "carrier",
+              "price",
+              "deliveryDays",
+              "address",
+              "tracking"
+            ]
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "discount": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "shipping": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "total": {
+                "$ref": "#/components/schemas/MoneyInput"
+              }
+            },
+            "required": [
+              "subtotal",
+              "discount",
+              "shipping",
+              "total"
+            ]
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderPaymentInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Última tentativa de pagamento conhecida pelo servidor."
+          },
+          "reservationExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Enquanto `pending_payment`, os itens ficam reservados até aqui."
+          },
+          "canPay": {
+            "type": "boolean",
+            "description": "true quando `POST /orders/{id}/payment` pode abrir/reabrir o checkout."
+          },
+          "canCancel": {
+            "type": "boolean"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/OrderStatusInput"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "status",
+                "at"
+              ]
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "statusLabel",
+          "isDemo",
+          "items",
+          "coupon",
+          "shipping",
+          "totals",
+          "payment",
+          "reservationExpiresAt",
+          "canPay",
+          "canCancel",
+          "history",
+          "createdAt",
+          "paidAt",
+          "cancelledAt"
+        ]
+      },
+      "OrderSummaryInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatusInput"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "total": {
+            "$ref": "#/components/schemas/MoneyInput"
+          },
+          "isDemo": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "statusLabel",
+          "itemCount",
+          "total",
+          "isDemo",
+          "createdAt"
+        ]
+      },
+      "AdminOrderInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "number": {
+            "type": "string",
+            "description": "Número exibido ao cliente, ex.: `UR001001`."
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatusInput"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "description": "Pedido com itens do catálogo demonstrativo."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemInput"
+            }
+          },
+          "coupon": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "discount": {
+                    "$ref": "#/components/schemas/MoneyInput"
+                  }
+                },
+                "required": [
+                  "code",
+                  "discount"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shipping": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "serviceId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "deliveryDays": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              },
+              "address": {
+                "$ref": "#/components/schemas/OrderShippingAddressInput"
+              },
+              "tracking": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OrderTrackingInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "provider",
+              "serviceId",
+              "name",
+              "carrier",
+              "price",
+              "deliveryDays",
+              "address",
+              "tracking"
+            ]
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "discount": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "shipping": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "total": {
+                "$ref": "#/components/schemas/MoneyInput"
+              }
+            },
+            "required": [
+              "subtotal",
+              "discount",
+              "shipping",
+              "total"
+            ]
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderPaymentInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Última tentativa de pagamento conhecida pelo servidor."
+          },
+          "reservationExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Enquanto `pending_payment`, os itens ficam reservados até aqui."
+          },
+          "canPay": {
+            "type": "boolean",
+            "description": "true quando `POST /orders/{id}/payment` pode abrir/reabrir o checkout."
+          },
+          "canCancel": {
+            "type": "boolean"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/OrderStatusInput"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "status",
+                "at"
+              ]
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "email"
+            ]
+          },
+          "attentionReason": {
+            "description": "`payment_amount_mismatch`, `paid_after_expiry_without_stock`, `paid_after_cancellation`, `chargeback`, `refund_required`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "allowedTransitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderStatusInput"
+            }
+          },
+          "fullHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OrderStatusInput"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "to": {
+                  "$ref": "#/components/schemas/OrderStatusInput"
+                },
+                "actor": {
+                  "type": "string"
+                },
+                "actorUserId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "note": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "actor",
+                "actorUserId",
+                "note",
+                "at"
+              ]
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string"
+                },
+                "environment": {
+                  "type": "string",
+                  "enum": [
+                    "sandbox",
+                    "production"
+                  ],
+                  "description": "`sandbox` = pagamento de teste, sem cobrança real."
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Estado no provedor: `created` (checkout aberto, sem pagamento), `pending`, `in_process`, `approved`, `rejected`, `cancelled`, `refunded`, `charged_back`."
+                },
+                "statusDetail": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "providerPaymentId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/MoneyInput"
+                },
+                "liveMode": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "environment",
+                "status",
+                "statusDetail",
+                "updatedAt",
+                "id",
+                "providerPaymentId",
+                "amount",
+                "liveMode"
+              ]
+            }
+          },
+          "shipments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "serviceId": {
+                  "type": "string"
+                },
+                "providerOrderId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string"
+                },
+                "trackingCode": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "labelUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "provider",
+                "serviceId",
+                "providerOrderId",
+                "status",
+                "trackingCode",
+                "labelUrl"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "statusLabel",
+          "isDemo",
+          "items",
+          "coupon",
+          "shipping",
+          "totals",
+          "payment",
+          "reservationExpiresAt",
+          "canPay",
+          "canCancel",
+          "history",
+          "createdAt",
+          "paidAt",
+          "cancelledAt",
+          "customer",
+          "attentionReason",
+          "allowedTransitions",
+          "fullHistory",
+          "payments",
+          "shipments"
+        ]
+      },
+      "ShippingOptionInput": {
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "description": "Identificador da modalidade no provedor (SuperFrete: 1 PAC, 2 SEDEX, 17 Mini Envios...)."
+          },
+          "name": {
+            "type": "string"
+          },
+          "carrier": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/MoneyInput"
+          },
+          "deliveryDays": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "max": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "description": "Dias úteis após a postagem."
+          }
+        },
+        "required": [
+          "serviceId",
+          "name",
+          "carrier",
+          "price",
+          "deliveryDays"
+        ]
+      },
+      "ShippingQuoteInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Enviar em `quoteId` no checkout."
+          },
+          "provider": {
+            "type": "string",
+            "description": "`superfrete` ou `fixture` (tabela simulada de desenvolvimento; nunca valor real)."
+          },
+          "isSimulated": {
+            "type": "boolean",
+            "description": "true quando os valores não vêm de uma transportadora real."
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShippingOptionInput"
+            },
+            "description": "Vazia quando nenhuma modalidade atende o CEP."
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "isSimulated",
+          "postalCode",
+          "expiresAt",
+          "options"
+        ]
+      },
+      "CheckoutSummaryInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "variantId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "productName": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "unitPrice": {
+                  "$ref": "#/components/schemas/MoneyInput"
+                },
+                "lineTotal": {
+                  "$ref": "#/components/schemas/MoneyInput"
+                }
+              },
+              "required": [
+                "variantId",
+                "productName",
+                "size",
+                "quantity",
+                "unitPrice",
+                "lineTotal"
+              ]
+            }
+          },
+          "coupon": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "discount": {
+                    "$ref": "#/components/schemas/MoneyInput"
+                  }
+                },
+                "required": [
+                  "code",
+                  "discount"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shipping": {
+            "type": "object",
+            "properties": {
+              "serviceId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "deliveryDays": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              }
+            },
+            "required": [
+              "serviceId",
+              "name",
+              "carrier",
+              "price",
+              "deliveryDays"
+            ]
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "discount": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "shipping": {
+                "$ref": "#/components/schemas/MoneyInput"
+              },
+              "total": {
+                "$ref": "#/components/schemas/MoneyInput"
+              }
+            },
+            "required": [
+              "subtotal",
+              "discount",
+              "shipping",
+              "total"
+            ]
+          },
+          "reservationMinutes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Tempo de reserva do estoque após criar o pedido."
+          },
+          "isDemo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "coupon",
+          "shipping",
+          "totals",
+          "reservationMinutes",
+          "isDemo"
+        ]
+      },
+      "PaymentSessionInput": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "const": "mercado_pago"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "production"
+            ]
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "description": "Redirecionar o cliente para esta URL (Checkout Pro). Não confirma nada por si só."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "provider",
+          "environment",
+          "checkoutUrl",
+          "expiresAt"
+        ]
+      },
+      "CheckoutResultInput": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/OrderInput"
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentSessionInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null quando o provedor de pagamento falhou; o pedido existe e `POST /orders/{id}/payment` tenta de novo."
+          }
+        },
+        "required": [
+          "order",
+          "payment"
+        ]
+      },
+      "OrderListInput": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSummaryInput"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfoInput"
+          }
+        },
+        "required": [
+          "data",
+          "pageInfo"
+        ]
+      },
       "FavoriteInput": {
         "type": "object",
         "properties": {
@@ -1390,6 +2728,18 @@
               }
             ]
           },
+          "perCustomerLimit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "timesRedeemed": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -1426,6 +2776,7 @@
           "startsAt",
           "endsAt",
           "usageLimit",
+          "perCustomerLimit",
           "timesRedeemed",
           "isActive",
           "isDemo",
@@ -1574,6 +2925,78 @@
           "updatedAt"
         ]
       },
+      "AdminOrderSummaryInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatusInput"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "total": {
+            "$ref": "#/components/schemas/MoneyInput"
+          },
+          "isDemo": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "attentionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "statusLabel",
+          "itemCount",
+          "total",
+          "isDemo",
+          "createdAt",
+          "customerName",
+          "attentionReason"
+        ]
+      },
+      "WebhookAckInput": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "processed",
+              "duplicate",
+              "ignored"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "NewsletterConfirmedInput": {
         "type": "object",
         "properties": {
@@ -1597,6 +3020,45 @@
         "required": [
           "status"
         ]
+      },
+      "AdminOrderListInput": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminOrderSummaryInput"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfoInput"
+          }
+        },
+        "required": [
+          "data",
+          "pageInfo"
+        ]
+      },
+      "Money": {
+        "type": "object",
+        "properties": {
+          "amountMinor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Valor em centavos."
+          },
+          "currencyCode": {
+            "type": "string",
+            "const": "BRL",
+            "description": "ISO 4217. A loja opera somente em BRL."
+          }
+        },
+        "required": [
+          "amountMinor",
+          "currencyCode"
+        ],
+        "additionalProperties": false
       },
       "ErrorDetail": {
         "type": "object",
@@ -1761,24 +3223,100 @@
         ],
         "additionalProperties": false
       },
-      "Money": {
+      "Address": {
         "type": "object",
         "properties": {
-          "amountMinor": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991,
-            "description": "Valor em centavos."
-          },
-          "currencyCode": {
+          "id": {
             "type": "string",
-            "const": "BRL",
-            "description": "ISO 4217. A loja opera somente em BRL."
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recipientName": {
+            "type": "string"
+          },
+          "recipientDocumentMasked": {
+            "type": "string",
+            "description": "CPF mascarado (`***.***.789-09`). O número completo nunca é devolvido."
+          },
+          "recipientPhoneMasked": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "8 dígitos."
+          },
+          "street": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "complement": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "district": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
           }
         },
         "required": [
-          "amountMinor",
-          "currencyCode"
+          "id",
+          "label",
+          "recipientName",
+          "recipientDocumentMasked",
+          "recipientPhoneMasked",
+          "postalCode",
+          "street",
+          "number",
+          "complement",
+          "district",
+          "city",
+          "state",
+          "isDefault",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "AddressList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Address"
+            }
+          }
+        },
+        "required": [
+          "data"
         ],
         "additionalProperties": false
       },
@@ -2657,6 +4195,1283 @@
         ],
         "additionalProperties": false
       },
+      "OrderStatus": {
+        "type": "string",
+        "enum": [
+          "pending_payment",
+          "paid",
+          "in_fulfillment",
+          "shipped",
+          "delivered",
+          "cancelled",
+          "expired",
+          "refunded"
+        ]
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "productSlug": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "alt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url",
+                  "alt"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unitPrice": {
+            "description": "Preço unitário no momento da compra (cópia imutável).",
+            "$ref": "#/components/schemas/Money"
+          },
+          "compareAtUnitPrice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "lineTotal": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "isDemo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "productId",
+          "productSlug",
+          "productName",
+          "variantId",
+          "sku",
+          "size",
+          "color",
+          "image",
+          "unitPrice",
+          "compareAtUnitPrice",
+          "quantity",
+          "lineTotal",
+          "isDemo"
+        ],
+        "additionalProperties": false
+      },
+      "OrderShippingAddress": {
+        "type": "object",
+        "properties": {
+          "recipientName": {
+            "type": "string"
+          },
+          "recipientDocumentMasked": {
+            "type": "string"
+          },
+          "recipientPhoneMasked": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "complement": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "district": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipientName",
+          "recipientDocumentMasked",
+          "recipientPhoneMasked",
+          "postalCode",
+          "street",
+          "number",
+          "complement",
+          "district",
+          "city",
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "OrderPayment": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "production"
+            ],
+            "description": "`sandbox` = pagamento de teste, sem cobrança real."
+          },
+          "status": {
+            "type": "string",
+            "description": "Estado no provedor: `created` (checkout aberto, sem pagamento), `pending`, `in_process`, `approved`, `rejected`, `cancelled`, `refunded`, `charged_back`."
+          },
+          "statusDetail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "provider",
+          "environment",
+          "status",
+          "statusDetail",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "OrderTracking": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "carrier": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "code",
+          "carrier"
+        ],
+        "additionalProperties": false
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "number": {
+            "type": "string",
+            "description": "Número exibido ao cliente, ex.: `UR001001`."
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "description": "Pedido com itens do catálogo demonstrativo."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "coupon": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "discount": {
+                    "$ref": "#/components/schemas/Money"
+                  }
+                },
+                "required": [
+                  "code",
+                  "discount"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shipping": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "serviceId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "deliveryDays": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              },
+              "address": {
+                "$ref": "#/components/schemas/OrderShippingAddress"
+              },
+              "tracking": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OrderTracking"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "provider",
+              "serviceId",
+              "name",
+              "carrier",
+              "price",
+              "deliveryDays",
+              "address",
+              "tracking"
+            ],
+            "additionalProperties": false
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "discount": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "shipping": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "total": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "subtotal",
+              "discount",
+              "shipping",
+              "total"
+            ],
+            "additionalProperties": false
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderPayment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Última tentativa de pagamento conhecida pelo servidor."
+          },
+          "reservationExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Enquanto `pending_payment`, os itens ficam reservados até aqui."
+          },
+          "canPay": {
+            "type": "boolean",
+            "description": "true quando `POST /orders/{id}/payment` pode abrir/reabrir o checkout."
+          },
+          "canCancel": {
+            "type": "boolean"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "status",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "statusLabel",
+          "isDemo",
+          "items",
+          "coupon",
+          "shipping",
+          "totals",
+          "payment",
+          "reservationExpiresAt",
+          "canPay",
+          "canCancel",
+          "history",
+          "createdAt",
+          "paidAt",
+          "cancelledAt"
+        ],
+        "additionalProperties": false
+      },
+      "OrderSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "total": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "isDemo": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "statusLabel",
+          "itemCount",
+          "total",
+          "isDemo",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "AdminOrder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "number": {
+            "type": "string",
+            "description": "Número exibido ao cliente, ex.: `UR001001`."
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "description": "Pedido com itens do catálogo demonstrativo."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "coupon": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "discount": {
+                    "$ref": "#/components/schemas/Money"
+                  }
+                },
+                "required": [
+                  "code",
+                  "discount"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shipping": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "serviceId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "deliveryDays": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              },
+              "address": {
+                "$ref": "#/components/schemas/OrderShippingAddress"
+              },
+              "tracking": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OrderTracking"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "provider",
+              "serviceId",
+              "name",
+              "carrier",
+              "price",
+              "deliveryDays",
+              "address",
+              "tracking"
+            ],
+            "additionalProperties": false
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "discount": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "shipping": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "total": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "subtotal",
+              "discount",
+              "shipping",
+              "total"
+            ],
+            "additionalProperties": false
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderPayment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Última tentativa de pagamento conhecida pelo servidor."
+          },
+          "reservationExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Enquanto `pending_payment`, os itens ficam reservados até aqui."
+          },
+          "canPay": {
+            "type": "boolean",
+            "description": "true quando `POST /orders/{id}/payment` pode abrir/reabrir o checkout."
+          },
+          "canCancel": {
+            "type": "boolean"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "status",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "email"
+            ],
+            "additionalProperties": false
+          },
+          "attentionReason": {
+            "description": "`payment_amount_mismatch`, `paid_after_expiry_without_stock`, `paid_after_cancellation`, `chargeback`, `refund_required`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "allowedTransitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderStatus"
+            }
+          },
+          "fullHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OrderStatus"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "to": {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                "actor": {
+                  "type": "string"
+                },
+                "actorUserId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "note": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "actor",
+                "actorUserId",
+                "note",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string"
+                },
+                "environment": {
+                  "type": "string",
+                  "enum": [
+                    "sandbox",
+                    "production"
+                  ],
+                  "description": "`sandbox` = pagamento de teste, sem cobrança real."
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Estado no provedor: `created` (checkout aberto, sem pagamento), `pending`, `in_process`, `approved`, `rejected`, `cancelled`, `refunded`, `charged_back`."
+                },
+                "statusDetail": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "providerPaymentId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Money"
+                },
+                "liveMode": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "environment",
+                "status",
+                "statusDetail",
+                "updatedAt",
+                "id",
+                "providerPaymentId",
+                "amount",
+                "liveMode"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "shipments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "serviceId": {
+                  "type": "string"
+                },
+                "providerOrderId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string"
+                },
+                "trackingCode": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "labelUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "provider",
+                "serviceId",
+                "providerOrderId",
+                "status",
+                "trackingCode",
+                "labelUrl"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "statusLabel",
+          "isDemo",
+          "items",
+          "coupon",
+          "shipping",
+          "totals",
+          "payment",
+          "reservationExpiresAt",
+          "canPay",
+          "canCancel",
+          "history",
+          "createdAt",
+          "paidAt",
+          "cancelledAt",
+          "customer",
+          "attentionReason",
+          "allowedTransitions",
+          "fullHistory",
+          "payments",
+          "shipments"
+        ],
+        "additionalProperties": false
+      },
+      "ShippingOption": {
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "description": "Identificador da modalidade no provedor (SuperFrete: 1 PAC, 2 SEDEX, 17 Mini Envios...)."
+          },
+          "name": {
+            "type": "string"
+          },
+          "carrier": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "deliveryDays": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "max": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false,
+            "description": "Dias úteis após a postagem."
+          }
+        },
+        "required": [
+          "serviceId",
+          "name",
+          "carrier",
+          "price",
+          "deliveryDays"
+        ],
+        "additionalProperties": false
+      },
+      "ShippingQuote": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Enviar em `quoteId` no checkout."
+          },
+          "provider": {
+            "type": "string",
+            "description": "`superfrete` ou `fixture` (tabela simulada de desenvolvimento; nunca valor real)."
+          },
+          "isSimulated": {
+            "type": "boolean",
+            "description": "true quando os valores não vêm de uma transportadora real."
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShippingOption"
+            },
+            "description": "Vazia quando nenhuma modalidade atende o CEP."
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "isSimulated",
+          "postalCode",
+          "expiresAt",
+          "options"
+        ],
+        "additionalProperties": false
+      },
+      "CheckoutSummary": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "variantId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "productName": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "unitPrice": {
+                  "$ref": "#/components/schemas/Money"
+                },
+                "lineTotal": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              },
+              "required": [
+                "variantId",
+                "productName",
+                "size",
+                "quantity",
+                "unitPrice",
+                "lineTotal"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "coupon": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "discount": {
+                    "$ref": "#/components/schemas/Money"
+                  }
+                },
+                "required": [
+                  "code",
+                  "discount"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shipping": {
+            "type": "object",
+            "properties": {
+              "serviceId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "deliveryDays": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "serviceId",
+              "name",
+              "carrier",
+              "price",
+              "deliveryDays"
+            ],
+            "additionalProperties": false
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "discount": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "shipping": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "total": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "subtotal",
+              "discount",
+              "shipping",
+              "total"
+            ],
+            "additionalProperties": false
+          },
+          "reservationMinutes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Tempo de reserva do estoque após criar o pedido."
+          },
+          "isDemo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "coupon",
+          "shipping",
+          "totals",
+          "reservationMinutes",
+          "isDemo"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentSession": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "const": "mercado_pago"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "production"
+            ]
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "description": "Redirecionar o cliente para esta URL (Checkout Pro). Não confirma nada por si só."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "provider",
+          "environment",
+          "checkoutUrl",
+          "expiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "CheckoutResult": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/Order"
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentSession"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null quando o provedor de pagamento falhou; o pedido existe e `POST /orders/{id}/payment` tenta de novo."
+          }
+        },
+        "required": [
+          "order",
+          "payment"
+        ],
+        "additionalProperties": false
+      },
+      "OrderList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSummary"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "required": [
+          "data",
+          "pageInfo"
+        ],
+        "additionalProperties": false
+      },
       "Favorite": {
         "type": "object",
         "properties": {
@@ -3011,6 +5826,18 @@
               }
             ]
           },
+          "perCustomerLimit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "timesRedeemed": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -3047,6 +5874,7 @@
           "startsAt",
           "endsAt",
           "usageLimit",
+          "perCustomerLimit",
           "timesRedeemed",
           "isActive",
           "isDemo",
@@ -3197,6 +6025,80 @@
         ],
         "additionalProperties": false
       },
+      "AdminOrderSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "total": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "isDemo": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "attentionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "statusLabel",
+          "itemCount",
+          "total",
+          "isDemo",
+          "createdAt",
+          "customerName",
+          "attentionReason"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookAck": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "processed",
+              "duplicate",
+              "ignored"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
       "NewsletterConfirmed": {
         "type": "object",
         "properties": {
@@ -3220,6 +6122,25 @@
         },
         "required": [
           "status"
+        ],
+        "additionalProperties": false
+      },
+      "AdminOrderList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminOrderSummary"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "required": [
+          "data",
+          "pageInfo"
         ],
         "additionalProperties": false
       }
@@ -5632,6 +8553,19 @@
                     ],
                     "description": "Usos totais; contabilizados ao criar pedidos (E5)."
                   },
+                  "perCustomerLimit": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Pedidos por conta de cliente; null = sem limite (E5)."
+                  },
                   "isActive": {
                     "type": "boolean"
                   }
@@ -5842,6 +8776,19 @@
                       }
                     ],
                     "description": "Usos totais; contabilizados ao criar pedidos (E5)."
+                  },
+                  "perCustomerLimit": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Pedidos por conta de cliente; null = sem limite (E5)."
                   },
                   "isActive": {
                     "type": "boolean"
@@ -6534,6 +9481,2072 @@
             }
           },
           "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/addresses": {
+      "get": {
+        "summary": "Endereços de entrega do cliente (padrão primeiro)",
+        "tags": [
+          "addresses"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Cadastra endereço de entrega",
+        "tags": [
+          "addresses"
+        ],
+        "description": "Até 10 endereços. O primeiro vira padrão automaticamente. CPF validado pelos dígitos verificadores.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "description": "Apelido opcional (ex.: Casa).",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "recipientName": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "recipientDocument": {
+                    "description": "CPF do destinatário (exigido pelas transportadoras para a etiqueta).",
+                    "type": "string"
+                  },
+                  "recipientPhone": {
+                    "description": "Telefone com DDD, 10 ou 11 dígitos.",
+                    "type": "string"
+                  },
+                  "postalCode": {
+                    "description": "CEP com 8 dígitos (pontuação opcional; a resposta usa só dígitos).",
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "number": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "description": "Número; use `S/N` quando não houver."
+                  },
+                  "complement": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "district": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "isDefault": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "recipientName",
+                  "recipientDocument",
+                  "recipientPhone",
+                  "postalCode",
+                  "street",
+                  "number",
+                  "district",
+                  "city",
+                  "state"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/addresses/{id}": {
+      "patch": {
+        "summary": "Altera endereço (pedidos já feitos mantêm a cópia original)",
+        "tags": [
+          "addresses"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "description": "Apelido opcional (ex.: Casa).",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "recipientName": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "recipientDocument": {
+                    "description": "CPF do destinatário (exigido pelas transportadoras para a etiqueta).",
+                    "type": "string"
+                  },
+                  "recipientPhone": {
+                    "description": "Telefone com DDD, 10 ou 11 dígitos.",
+                    "type": "string"
+                  },
+                  "postalCode": {
+                    "description": "CEP com 8 dígitos (pontuação opcional; a resposta usa só dígitos).",
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "number": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "description": "Número; use `S/N` quando não houver."
+                  },
+                  "complement": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "district": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "isDefault": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove endereço (idempotente para o próprio cliente)",
+        "tags": [
+          "addresses"
+        ],
+        "description": "Se o removido era o padrão, o mais antigo restante passa a ser o padrão.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shipping/quotes": {
+      "post": {
+        "summary": "Cota o frete da sacola atual para um CEP",
+        "tags": [
+          "shipping"
+        ],
+        "description": "Itens, pesos e valores vêm da sacola no servidor. A cotação vale por alguns minutos e só para o conteúdo atual da sacola. Erros: `409` `cart_empty`/`cart_has_issues`; `400` `shipping_rejected`; `503` `shipping_unavailable`. Limite por IP: `SHIPPING_QUOTE_RATE_LIMIT_MAX` cotações por 15 min (padrão 30).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "postalCode": {
+                    "description": "CEP com 8 dígitos (pontuação opcional; a resposta usa só dígitos).",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "postalCode"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShippingQuote"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkouts/preview": {
+      "post": {
+        "summary": "Resumo do checkout recalculado no servidor (sem efeitos)",
+        "tags": [
+          "checkout"
+        ],
+        "description": "Mesmas validações do `POST /checkouts`, sem reservar estoque nem criar pedido.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "addressId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "quoteId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "`id` de `POST /shipping/quotes` para o CEP do endereço escolhido."
+                  },
+                  "serviceId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10,
+                    "description": "`serviceId` de uma das opções da cotação."
+                  }
+                },
+                "required": [
+                  "addressId",
+                  "quoteId",
+                  "serviceId"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkouts": {
+      "post": {
+        "summary": "Cria o pedido (reserva estoque) e abre o pagamento no Mercado Pago",
+        "tags": [
+          "checkout"
+        ],
+        "description": "Exige `Idempotency-Key` (16–128 caracteres; gere um por tentativa de compra e reutilize-o ao repetir a mesma requisição). A mesma chave com o mesmo corpo devolve a mesma resposta sem criar outro pedido; com outro corpo → `409 idempotency_key_reused`. O pedido nasce `pending_payment`; só o Mercado Pago (webhook/consulta à API) o confirma.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "addressId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "quoteId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "`id` de `POST /shipping/quotes` para o CEP do endereço escolhido."
+                  },
+                  "serviceId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10,
+                    "description": "`serviceId` de uma das opções da cotação."
+                  },
+                  "expectedTotal": {
+                    "$ref": "#/components/schemas/MoneyInput"
+                  }
+                },
+                "required": [
+                  "addressId",
+                  "quoteId",
+                  "serviceId"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_:-]{16,128}$"
+            },
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders": {
+      "get": {
+        "summary": "Pedidos do cliente (mais recentes primeiro)",
+        "tags": [
+          "orders"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": 24,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}": {
+      "get": {
+        "summary": "Detalhe do pedido do cliente",
+        "tags": [
+          "orders"
+        ],
+        "description": "Fonte de verdade do estado após voltar do Mercado Pago: a página de retorno deve consultar esta rota, nunca confiar nos parâmetros da URL de retorno.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/payment": {
+      "post": {
+        "summary": "Abre (ou reabre) o checkout do Mercado Pago de um pedido pendente",
+        "tags": [
+          "orders"
+        ],
+        "description": "Reaproveita a sessão aberta quando ainda válida. `409 order_not_payable` quando o pedido não está mais pendente.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/payment/sync": {
+      "post": {
+        "summary": "Consulta o Mercado Pago e atualiza o pedido (para a página de retorno)",
+        "tags": [
+          "orders"
+        ],
+        "description": "O servidor busca os pagamentos do pedido na API oficial e aplica o estado; parâmetros da URL de retorno nunca são usados. Útil quando o webhook ainda não chegou (ou em desenvolvimento local, onde o webhook não alcança a máquina).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/cancel": {
+      "post": {
+        "summary": "Cancela um pedido ainda não pago (libera estoque e cupom)",
+        "tags": [
+          "orders"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/mercadopago": {
+      "post": {
+        "summary": "Notificações do Mercado Pago (servidor-a-servidor; não usar no frontend)",
+        "tags": [
+          "webhooks"
+        ],
+        "description": "Autenticada por `x-signature` (HMAC-SHA256 com o segredo do painel). O corpo nunca é usado como fonte do estado: o pagamento é consultado na API oficial. Duplicatas são reconhecidas e ignoradas. `401` assinatura inválida; `500` falha temporária (o Mercado Pago reenviará).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "number"
+                    ]
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "action": {
+                    "type": "string"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      }
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "additionalProperties": {}
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "type",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "topic",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "in": "query",
+            "name": "data.id",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookAck"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/superfrete": {
+      "post": {
+        "summary": "Notificações da SuperFrete (servidor-a-servidor; não usar no frontend)",
+        "tags": [
+          "webhooks"
+        ],
+        "description": "Autenticada por `X-ME-Signature` (HMAC-SHA256 do corpo bruto com o `secret_token` do webhook). O estado da etiqueta é reconsultado na API da SuperFrete antes de ser aplicado.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookAck"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/orders": {
+      "get": {
+        "summary": "Lista pedidos (mais recentes primeiro)",
+        "tags": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": 24,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/OrderStatusInput"
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            },
+            "in": "query",
+            "name": "attention",
+            "required": false,
+            "description": "Somente pedidos que exigem ação do operador."
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{id}": {
+      "get": {
+        "summary": "Detalhe completo do pedido (pagamentos, etiquetas, histórico com autores)",
+        "tags": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{id}/transitions": {
+      "post": {
+        "summary": "Avança o pedido (separação, envio, entrega) ou cancela",
+        "tags": [
+          "admin"
+        ],
+        "description": "Pagamento e estorno são definidos pelo Mercado Pago, não por esta rota. Cancelar pedido pendente libera estoque e cupom; cancelar pedido pago devolve o estoque e marca `attentionReason = refund_required` (estorno manual no Mercado Pago).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "to": {
+                    "type": "string",
+                    "enum": [
+                      "in_fulfillment",
+                      "shipped",
+                      "delivered",
+                      "cancelled"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "to"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{id}/shipments": {
+      "post": {
+        "summary": "Cria a etiqueta na SuperFrete (fica `pending` no carrinho da SuperFrete; não paga)",
+        "tags": [
+          "admin"
+        ],
+        "description": "Pagar a etiqueta debita a carteira SuperFrete e é feito manualmente no painel da SuperFrete nesta fase.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/orders/{id}/shipments/{shipmentId}/sync": {
+      "post": {
+        "summary": "Atualiza status/rastreio da etiqueta consultando a SuperFrete",
+        "tags": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "shipmentId",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
             "description": "Default Response",
             "content": {
               "application/json": {

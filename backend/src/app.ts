@@ -6,17 +6,26 @@ import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from "fas
 import type { Env } from "./config/env.js";
 import { buildLoggerOptions, type LogDestination } from "./config/logger.js";
 import type { Database } from "./db/client.js";
+import { startJobScheduler } from "./jobs/jobs.js";
 import { accountsRoutes } from "./modules/accounts/accounts.routes.js";
+import { addressesRoutes } from "./modules/addresses/addresses.routes.js";
 import { createDbSessionResolver } from "./modules/accounts/sessions.js";
 import { authPlugin } from "./modules/auth/auth.plugin.js";
 import type { SessionResolver } from "./modules/auth/auth.types.js";
 import { cartRoutes } from "./modules/cart/cart.routes.js";
 import { catalogRoutes } from "./modules/catalog/catalog.routes.js";
+import { checkoutRoutes } from "./modules/checkout/checkout.routes.js";
 import { favoritesRoutes } from "./modules/favorites/favorites.routes.js";
 import { healthRoutes, type HealthCheck } from "./modules/health/health.routes.js";
 import { createSmtpMailer, type Mailer } from "./modules/mail/mailer.js";
 import { campaignRoutes, marketingAdminRoutes } from "./modules/marketing/marketing.routes.js";
 import { newsletterRoutes } from "./modules/newsletter/newsletter.routes.js";
+import { disabledWhatsAppSender, type WhatsAppSender } from "./modules/notifications/whatsapp.js";
+import { ordersAdminRoutes } from "./modules/orders/orders.admin.routes.js";
+import { createMercadoPagoGateway, type PaymentGateway } from "./modules/payments/mercadopago.client.js";
+import { webhookRoutes } from "./modules/payments/webhooks.routes.js";
+import type { ShippingProvider } from "./modules/shipping/shipping.provider.js";
+import { createShippingProviderFromEnv, shippingSettingsFrom } from "./modules/shipping/shipping.service.js";
 import { errorHandlerPlugin } from "./plugins/error-handler.js";
 import { openApiPlugin } from "./plugins/openapi.js";
 import { securityPlugin } from "./plugins/security.js";
@@ -40,6 +49,23 @@ export interface AppDependencies {
   mailer?: Mailer;
   /** Overrides the log destination (tests capture log lines through it). */
   logStream?: LogDestination;
+  /** Default: from MERCADO_PAGO_MODE (null when disabled). */
+  paymentGateway?: PaymentGateway | null;
+  /** Default: from SHIPPING_PROVIDER (null when disabled). */
+  shippingProvider?: ShippingProvider | null;
+  /** Default: disabled channel (no WhatsApp message is sent in this phase). */
+  whatsapp?: WhatsAppSender;
+}
+
+function paymentGatewayFromEnv(env: Env): PaymentGateway | null {
+  if (env.MERCADO_PAGO_MODE === "disabled") return null;
+  return createMercadoPagoGateway({
+    apiUrl: env.MERCADO_PAGO_API_URL,
+    accessToken: env.MERCADO_PAGO_ACCESS_TOKEN!,
+    environment: env.MERCADO_PAGO_MODE,
+    ...(env.MERCADO_PAGO_NOTIFICATION_URL ? { notificationUrl: env.MERCADO_PAGO_NOTIFICATION_URL } : {}),
+    statementDescriptor: env.MERCADO_PAGO_STATEMENT_DESCRIPTOR,
+  });
 }
 
 /**
@@ -51,9 +77,13 @@ function generateRequestId(request: IncomingMessage): string {
   return typeof header === "string" && incomingRequestId.test(header) ? header : randomUUID();
 }
 
-export async function buildApp({ env, database, healthChecks, sessionResolver, mailer, logStream }: AppDependencies) {
+export async function buildApp({ env, database, healthChecks, sessionResolver, mailer, logStream, ...deps }: AppDependencies) {
   const checks = healthChecks ?? [{ name: "database", check: () => database.ping() }];
   const mail = mailer ?? createSmtpMailer(env);
+  const gateway = deps.paymentGateway === undefined ? paymentGatewayFromEnv(env) : deps.paymentGateway;
+  const shippingProvider = deps.shippingProvider === undefined ? createShippingProviderFromEnv(env) : deps.shippingProvider;
+  const shippingSettings = shippingSettingsFrom(env);
+  const whatsapp = deps.whatsapp ?? disabledWhatsAppSender;
   const app = Fastify({
     logger: buildLoggerOptions(env, logStream),
     genReqId: generateRequestId,
@@ -101,10 +131,24 @@ export async function buildApp({ env, database, healthChecks, sessionResolver, m
       await api.register(campaignRoutes, { db: database.db });
       await api.register(newsletterRoutes, { db: database.db, env, mailer: mail });
       await api.register(marketingAdminRoutes, { db: database.db });
-      // Further modules (shipping, checkout, orders, ...) are registered here in later phases.
+      await api.register(addressesRoutes, { db: database.db });
+      await api.register(checkoutRoutes, { db: database.db, env, gateway, shippingProvider, shippingSettings });
+      await api.register(webhookRoutes, { db: database.db, env, gateway, shippingProvider });
+      await api.register(ordersAdminRoutes, { db: database.db, env, shippingProvider, shippingSettings });
     },
     { prefix: API_PREFIX },
   );
+
+  if (env.JOBS_ENABLED) {
+    let stop: (() => void) | undefined;
+    app.addHook("onReady", async () => {
+      stop = startJobScheduler(
+        { db: database.db, gateway, mailer: mail, whatsapp, log: app.log, appPublicUrl: env.APP_PUBLIC_URL },
+        env.JOBS_INTERVAL_SECONDS,
+      );
+    });
+    app.addHook("onClose", async () => stop?.());
+  }
 
   return app;
 }

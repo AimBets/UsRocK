@@ -56,6 +56,7 @@ const couponFields = {
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime().nullable(),
   usageLimit: z.number().int().min(1).nullable().describe("Usos totais; contabilizados ao criar pedidos (E5)."),
+  perCustomerLimit: z.number().int().min(1).nullable().describe("Pedidos por conta de cliente; null = sem limite (E5)."),
   isActive: z.boolean(),
 };
 
@@ -70,6 +71,7 @@ export const createCouponBodySchema = z.object({
   startsAt: couponFields.startsAt.optional().describe("Padrão: agora."),
   endsAt: couponFields.endsAt.optional(),
   usageLimit: couponFields.usageLimit.optional(),
+  perCustomerLimit: couponFields.perCustomerLimit.optional(),
   isActive: couponFields.isActive.optional(),
 });
 
@@ -93,6 +95,7 @@ export const adminCouponSchema = z
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime().nullable(),
     usageLimit: z.number().int().nullable(),
+    perCustomerLimit: z.number().int().nullable(),
     timesRedeemed: z.number().int(),
     isActive: z.boolean(),
     isDemo: z.boolean(),
