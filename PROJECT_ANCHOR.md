@@ -15,7 +15,7 @@
 - Claude: `backend/`, contratos de APIs e integrações.
 - Ambos: leitura dos handoffs; registro de suas tarefas; documentação central reconciliada a cada integração.
 
-## Estado atual — E4 integrada e testada ponta a ponta
+## Estado atual — E4 integrada; frontend E5 validado contra branch separada do backend
 - [x] Definição de escopo e divisão de responsabilidades.
 - [x] Documentos iniciais de colaboração criados (após serem inseridos no repositório).
 - [~] Base do frontend gerada e executável localmente; aprovação da stack completa e infraestrutura compartilhada pendentes.
@@ -26,15 +26,16 @@
 - [x] Frontend E4 integrado às APIs reais de sacola, favoritos, campanhas, cupom e newsletter; migração local, Mailpit, falhas e responsividade testados.
 - [x] Backend E4 implementado e testado localmente (sacola de visitante/conta com junção no login, favoritos, cupons, campanhas, newsletter com dupla confirmação; 89 unitários + 66 de integração e verificação ao vivo em 2026-10-15; sem commit até autorização).
 - [x] Regressão de vitrines investigada e recuperada: Fastify offline era a causa; seis produtos, detalhes e imagens foram revalidados de PostgreSQL até o build Next, sem mocks e sem alteração no backend.
+- [~] Frontend E5 implementado e validado estaticamente, ao vivo e responsivamente contra uma cópia temporária de `claude/e5-checkout`; integração do backend à base, tipos OpenAPI gerados e sandboxes reais ainda pendentes.
 - [ ] Admin e CMS implementados.
 - [ ] Editor de landing pages implementado.
 - [ ] Integrações comerciais implementadas e testadas em sandbox.
 - [ ] Segurança, QA, homologação e deploy concluídos.
 
 ## Próxima ação prioritária
-1. Revisar o diff da branch `codex/e4-integracao` e autorizar commit/PR; nenhum commit, push ou merge foi realizado pelo Codex.
-2. Manter `test:catalog-live`, `test:commerce-live` e `test:responsive-live` na revisão integrada com PostgreSQL, Fastify, Next e Mailpit ativos.
-3. Após aprovação da E4, iniciar a E5 no backend para frete, reserva de estoque, checkout e pedidos; o checkout continua corretamente desabilitado no frontend.
+1. Revisar e integrar, com autorização, a branch de backend `claude/e5-checkout` antes de atualizar a base de `codex/e5-checkout`; o Codex não mesclou nem modificou arquivos do backend.
+2. Com o OpenAPI E5 na base, adicionar seus schemas ao gerador do frontend, regenerar `openapi.d.ts`, remover o espelho provisório de `src/types/checkout.ts` e repetir a suíte completa.
+3. Obter credenciais de teste para validar os sandboxes reais do Mercado Pago e da SuperFrete; até lá, manter explícitos o frete fixture e o pagamento indisponível em desenvolvimento.
 
 ## Registro das integrações
 | Funcionalidade | Frontend | Backend | Estado da integração |
@@ -45,12 +46,24 @@
 | Carrinho e favoritos | Integrado e testado (`/carrinho`, drawer, `/favoritos`, migração local e junção pós-login) | Implementado e testado (E4: `/cart*`, `/me/favorites*`) | Integrado; servidor é a fonte de preço, estoque, desconto e totais |
 | Cupons e campanhas | Integrado (`CouponForm`, `CampaignPanel`) | Implementado e testado (E4: `/cart/coupon`, `/campaigns/active`, admin mínimo) | Loja integrada; UI administrativa continua futura (E6) |
 | Newsletter | Inscrição, confirmação e descadastro integrados | Implementado e testado (E4: inscrição, confirmação, descadastro) | Integrado ponta a ponta com consentimento explícito e Mailpit |
-| Frete | Pendente | Pendente | Não iniciado |
-| Checkout | Pendente | Pendente | Não iniciado |
+| Frete | Estimativa na sacola e seleção no checkout implementadas e testadas contra fixture E5 | Implementado em `claude/e5-checkout`; integração à base pendente | Ponta a ponta local com fixture; sandbox SuperFrete real pendente |
+| Checkout e pedidos | Fluxo, retorno e área do cliente implementados e testados | Implementado em `claude/e5-checkout`; integração à base pendente | Validado localmente com pagamento desativado; sandbox Mercado Pago e tipos OpenAPI integrados pendentes |
 | Landing pages | Pendente | Pendente | Não iniciado |
 
 ## Alterações recentes
 - Bootstrap: estrutura inicial e documentos criados. Nenhuma integração funcional afirmada.
+
+## Registro factual — Frontend E5 contra branch separada, 2026-10-16 (Codex)
+- Branch `codex/e5-checkout` confirmada em base `a5917f7`, fora de `main`. O backend E5 está em `claude/e5-checkout` (`a336bbd`) e não foi mesclado; nenhum arquivo de `backend/` foi modificado pelo Codex.
+- Implementados estimador de frete na sacola; checkout autenticado em endereço, cotação, modalidade, prévia e confirmação idempotente; retorno do Mercado Pago baseado somente no servidor; CRUD de endereços; listagem e detalhe de pedidos com capacidades, reserva, pagamento, cancelamento, rastreio e histórico.
+- Estados críticos tratados por códigos estáveis: sacola vazia/com problema, estoque, frete rejeitado/indisponível/vencido/divergente, total alterado, cupom, idempotência em andamento/reutilizada, pagamento indisponível e pedido não pagável/cancelável.
+- `src/types/checkout.ts` é um espelho provisório dos schemas OpenAPI E5 da branch do Claude. A geração oficial fica bloqueada até o backend E5 entrar na base; isso impede declarar a integração definitiva, embora os payloads tenham sido comparados com o contrato da branch.
+- Validação estática: OpenAPI E4 atual, lint, TypeScript, build e 11/11 testes passaram. O build gerou `/checkout`, `/checkout/retorno`, `/conta/enderecos`, `/conta/pedidos` e `/conta/pedidos/[id]`.
+- Validação ao vivo: cópia temporária de `claude/e5-checkout`, sem mesclagem, compilou; migração e seed passaram; Fastify com frete fixture e pagamento desligado validou CRUD/máscaras, falha/fixture de frete, prévia, criação, idempotência, pagamento indisponível, listagem e cancelamento.
+- Edge/CDP navegou o checkout até a revisão e abriu edição de endereço em 390, 768, 1024 e 1440 px, além de sacola, pedidos, detalhe e retorno. Capturas inspecionadas sem overflow horizontal.
+- As quatro contas e os quatro pedidos fictícios criados pelos checks desta retomada foram removidos do PostgreSQL; a conferência final encontrou zero usuários `codex-e5-*`.
+- Sandboxes reais do Mercado Pago e da SuperFrete não foram executados por falta de credenciais. Nenhum commit, push ou merge foi realizado.
+- Próximo passo exato: integrar o backend E5 com autorização, atualizar a base do frontend, gerar tipos do OpenAPI integrado e repetir todos os checks antes de revisão/PR.
 
 ## Registro factual — Integração frontend E4 definitiva, 2026-10-15 (Codex)
 - Na retomada final da revisão, branch `codex/e4-integracao` e `HEAD 36a5d74` foram reconfirmados. O diff continua restrito ao frontend e à documentação; OpenAPI, lint, TypeScript, 7/7 testes e build passaram novamente, e `git diff --check` não encontrou erro. Fastify e Next estavam desligados, então os checks ao vivo não foram repetidos nessa rodada; os resultados ponta a ponta anteriores permanecem válidos e documentados.
