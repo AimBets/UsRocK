@@ -7,9 +7,11 @@ import type { Env } from "./config/env.js";
 import { buildLoggerOptions, type LogDestination } from "./config/logger.js";
 import type { Database } from "./db/client.js";
 import { startJobScheduler } from "./jobs/jobs.js";
+import { accessAdminRoutes } from "./modules/access/access.routes.js";
 import { accountsRoutes } from "./modules/accounts/accounts.routes.js";
 import { addressesRoutes } from "./modules/addresses/addresses.routes.js";
 import { createDbSessionResolver } from "./modules/accounts/sessions.js";
+import { auditAdminRoutes } from "./modules/audit/audit.routes.js";
 import { authPlugin } from "./modules/auth/auth.plugin.js";
 import type { SessionResolver } from "./modules/auth/auth.types.js";
 import { cartRoutes } from "./modules/cart/cart.routes.js";
@@ -135,6 +137,8 @@ export async function buildApp({ env, database, healthChecks, sessionResolver, m
       await api.register(checkoutRoutes, { db: database.db, env, gateway, shippingProvider, shippingSettings });
       await api.register(webhookRoutes, { db: database.db, env, gateway, shippingProvider });
       await api.register(ordersAdminRoutes, { db: database.db, env, shippingProvider, shippingSettings });
+      await api.register(accessAdminRoutes, { db: database.db });
+      await api.register(auditAdminRoutes, { db: database.db });
     },
     { prefix: API_PREFIX },
   );

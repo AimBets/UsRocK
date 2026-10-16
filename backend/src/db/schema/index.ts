@@ -18,3 +18,4 @@ export * from "../../modules/orders/orders.schema.js";
 export * from "../../modules/payments/payments.schema.js";
 export * from "../../modules/shipping/shipping.schema.js";
 export * from "../../modules/notifications/notifications.schema.js";
+export * from "../../modules/audit/audit.schema.js";

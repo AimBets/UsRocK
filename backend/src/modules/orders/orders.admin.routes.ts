@@ -5,7 +5,8 @@ import type { Env } from "../../config/env.js";
 import type { Db } from "../../db/client.js";
 import { errorResponseSchema, errors } from "../../shared/errors.js";
 import { buildPage, decodeCursor, paginatedResponseSchema, paginationQuerySchema } from "../../shared/pagination.js";
-import { requirePermission } from "../auth/auth.plugin.js";
+import { auditActorFrom, recordAudit } from "../audit/audit.service.js";
+import { protectAdminScope } from "../auth/auth.plugin.js";
 import { createShipmentLabel, refreshShipment } from "../shipping/shipments.service.js";
 import type { ShippingProvider } from "../shipping/shipping.provider.js";
 import { shipments } from "../shipping/shipping.schema.js";
@@ -32,14 +33,11 @@ const adminOrderSummarySchema = orderSummarySchema
   .meta({ id: "AdminOrderSummary" });
 
 /**
- * Minimal order administration for the future panel (E6). Every change is written to
- * `order_status_history` with the operator id (persistent audit trail for orders).
+ * Order administration. Status changes go to `order_status_history` (customer-facing timeline)
+ * and every operator action also goes to the admin audit trail (E6).
  */
 export const ordersAdminRoutes: FastifyPluginAsyncZod<OrdersAdminRoutesOptions> = async (app, { db, env, shippingProvider, shippingSettings }) => {
-  app.addHook("preValidation", requirePermission("orders:manage"));
-  app.addHook("onSend", async (_request, reply) => {
-    reply.header("cache-control", "no-store");
-  });
+  protectAdminScope(app, "orders:manage");
 
   async function adminView(id: string) {
     const [order] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
@@ -127,7 +125,14 @@ export const ordersAdminRoutes: FastifyPluginAsyncZod<OrdersAdminRoutesOptions> 
             await flagAttention(tx, order.id, "refund_required");
           }
         }
-        await transitionOrder(tx, order, to, { actor: "admin", actorUserId, note: note ?? null });
+        const updated = await transitionOrder(tx, order, to, { actor: "admin", actorUserId, note: note ?? null });
+        await recordAudit(tx, auditActorFrom(request), {
+          action: "order.transition",
+          resourceType: "order",
+          resourceId: order.id,
+          changes: { status: { from: order.status, to }, ...(updated.attentionReason !== order.attentionReason ? { attentionReason: { from: order.attentionReason, to: updated.attentionReason } } : {}) },
+          metadata: { orderNumber: order.number, ...(note ? { note } : {}) },
+        });
       });
       request.log.info({ orderId: request.params.id, to: request.body.to, actorId: actorUserId }, "order transition by operator");
       return adminView(request.params.id);
@@ -148,6 +153,13 @@ export const ordersAdminRoutes: FastifyPluginAsyncZod<OrdersAdminRoutesOptions> 
     },
     async (request) => {
       const shipment = await createShipmentLabel({ db, env, provider: shippingProvider, settings: shippingSettings }, request.params.id);
+      // The label lives at the provider and cannot be rolled back with our transaction; audit right after it exists.
+      await recordAudit(db, auditActorFrom(request), {
+        action: "order.shipment_create",
+        resourceType: "order",
+        resourceId: request.params.id,
+        metadata: { shipmentId: shipment.id, provider: shipment.provider, status: shipment.status },
+      });
       request.log.info({ orderId: request.params.id, shipmentId: shipment.id, actorId: request.principal!.userId }, "shipping label created");
       return adminView(request.params.id);
     },
@@ -171,7 +183,13 @@ export const ordersAdminRoutes: FastifyPluginAsyncZod<OrdersAdminRoutesOptions> 
         .where(and(eq(shipments.id, request.params.shipmentId), eq(shipments.orderId, request.params.id)))
         .limit(1);
       if (!shipment) throw errors.notFound("Etiqueta não encontrada.");
-      await refreshShipment(db, shippingProvider, shipment, request.principal!.userId);
+      const refreshed = await refreshShipment(db, shippingProvider, shipment, request.principal!.userId);
+      await recordAudit(db, auditActorFrom(request), {
+        action: "order.shipment_sync",
+        resourceType: "order",
+        resourceId: request.params.id,
+        metadata: { shipmentId: shipment.id, statusBefore: shipment.status, statusAfter: refreshed.status },
+      });
       return adminView(request.params.id);
     },
   );

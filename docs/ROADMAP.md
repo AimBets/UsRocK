@@ -15,8 +15,8 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 
 ## Fase 2 — Operação
 - [~] Login, permissões e área do cliente: API de contas/sessão/permissões implementada e testada (E3); telas do frontend pendentes.
-- [ ] Admin de produtos, estoque, pedidos, clientes e campanhas.
-- [ ] Logs de auditoria, tratamento de erros e testes de integração.
+- [~] Admin de produtos, estoque, pedidos, clientes e campanhas: backend E6 dividido em 9 entregas (ver `docs/API_CONTRACTS.md`, "Painel administrativo (E6)"); E6.1 (fundação, equipe e permissões) implementada e testada; dashboard (E6.2) e catálogo (E6.3) são as próximas; UI do painel pendente.
+- [~] Logs de auditoria: trilha persistente e imutável das operações administrativas implementada e testada (E6.1); retenção/exportação na E9.
 
 ## Fase 3 — Landing pages
 - [ ] Templates editáveis e editor em blocos com preview.
@@ -43,4 +43,5 @@ Estados: [ ] pendente, [~] em andamento, [x] concluído e validado.
 - E2 (catálogo público somente leitura + seed demonstrativo) concluída localmente em 2026-10-13; sem commit até autorização.
 - E3 (contas, sessão por cookie, permissões, recuperação de senha por e-mail, consentimentos, comando de admin) concluída localmente em 2026-10-13; sem commit até autorização.
 - E4 (sacola de visitante/conta com junção no login, favoritos, cupons, campanhas com admin mínimo, newsletter com dupla confirmação) concluída localmente no backend em 2026-10-15; integrada à `main` pelo PR #5.
-- E5 (endereços, frete SuperFrete, checkout idempotente com reserva de estoque, pedidos, Mercado Pago Checkout Pro em sandbox, webhooks assinados, e-mails por fila, admin mínimo de pedidos) concluída localmente no backend em 2026-10-15, testada contra servidores locais; sandboxes reais pendentes de credenciais; sem commit até autorização.
+- E5 (endereços, frete SuperFrete, checkout idempotente com reserva de estoque, pedidos, Mercado Pago Checkout Pro em sandbox, webhooks assinados, e-mails por fila, admin mínimo de pedidos) concluída localmente no backend em 2026-10-15, testada contra servidores locais; sandboxes reais pendentes de credenciais; integrada à `main` pelo PR #9.
+- E6 dividida em E6.1 fundação/equipe/auditoria → E6.2 dashboard → E6.3 catálogo → E6.4 estoque → E6.5 pedidos avançados → E6.6 clientes → E6.7 marketing completo → E6.8 configurações e relatórios → E6.9 upload de mídia (depende de armazenamento). E6.1 concluída localmente em 2026-10-16 (migração `0005_admin`); sem commit até autorização.

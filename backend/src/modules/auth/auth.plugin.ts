@@ -33,6 +33,22 @@ export const requireAuth: preHandlerAsyncHookHandler = async (request) => {
 export function requirePermission(permission: Permission): preHandlerAsyncHookHandler {
   return async (request) => {
     if (!request.principal) throw errors.unauthenticated();
-    if (!hasPermission(request.principal.roles, permission)) throw errors.forbidden();
+    if (!hasPermission(request.principal.roles, permission)) {
+      // Signed-in users probing privileged routes are worth noticing; the id is not personal data.
+      request.log.warn({ actorId: request.principal.userId, permission, route: request.routeOptions.url }, "permission denied");
+      throw errors.forbidden();
+    }
   };
+}
+
+/**
+ * Standard protection for an admin plugin scope: the permission check runs before body/query
+ * validation (anonymous callers get 401, never a 400 that reveals the schema) and responses are
+ * never cached. Call it at the top of an encapsulated plugin so it covers only that plugin.
+ */
+export function protectAdminScope(app: Pick<FastifyInstance, "addHook">, permission: Permission): void {
+  app.addHook("preValidation", requirePermission(permission));
+  app.addHook("onSend", async (_request, reply) => {
+    reply.header("cache-control", "no-store");
+  });
 }

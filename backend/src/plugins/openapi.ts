@@ -37,6 +37,7 @@ export const openApiPlugin = fp<OpenApiOptions>(
           { name: "marketing", description: "Campanhas públicas vigentes" },
           { name: "newsletter", description: "Inscrição com dupla confirmação e descadastro" },
           { name: "admin", description: "Administração (exige permissão)" },
+          { name: "admin-access", description: "Administração: equipe, papéis, bloqueio de contas e trilha de auditoria" },
         ],
         components: {
           securitySchemes: {
