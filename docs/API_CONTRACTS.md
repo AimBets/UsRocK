@@ -230,7 +230,7 @@ Visitantes continuam com favoritos no navegador; após login, importar com `/me/
 | `GET /api/v1/admin/coupons`, `POST /api/v1/admin/coupons`, `PATCH /api/v1/admin/coupons/{id}` | Lista (cursor, mais recentes primeiro), cria, altera; sem exclusão (desativar com `isActive: false`) |
 | `GET /api/v1/admin/campaigns`, `POST /api/v1/admin/campaigns`, `PATCH /api/v1/admin/campaigns/{id}` | Idem; criação em `draft`; publicar/arquivar via `status` |
 
-Valores em centavos (`amountOffMinor`, `maxDiscountMinor`, `minSubtotalMinor`); regras cruzadas validadas (`400` por campo), código/slug duplicado → `409 already_exists`, referência inexistente → `400 not_found`. Cada alteração gera log com `actorId` (trilha persistente de auditoria: E6). A interface do admin não existe ainda.
+Valores em centavos (`amountOffMinor`, `maxDiscountMinor`, `minSubtotalMinor`); regras cruzadas validadas (`400` por campo), código/slug duplicado → `409 already_exists`, referência inexistente → `400 not_found`. Desde a E6.1, cada alteração efetiva é gravada na trilha de auditoria (`coupon.*`, `campaign.*`) na mesma transação, e a permissão é verificada **antes** da validação (anônimo recebe `401`, não `400`). A interface do admin não existe ainda.
 
 ### Endereços, frete, checkout, pedidos e pagamentos (E5)
 **Status:** implementado e testado (unitário + 26 cenários de integração com PostgreSQL real e servidores HTTP locais que imitam Mercado Pago e SuperFrete + verificação ao vivo com servidor compilado, tabela de frete simulada e Mailpit, 2026-10-15). Migração `0004_checkout` (aditiva). **Credenciais reais de sandbox não estavam disponíveis: a comunicação com os sandboxes reais ainda não foi exercitada** (`npm run sandbox:smoke` fará isso quando houver credenciais). Schemas: `Address`, `ShippingQuote`, `ShippingOption`, `CheckoutSummary`, `CheckoutResult`, `PaymentSession`, `Order`, `OrderItem`, `OrderSummary`, `OrderList`, `OrderStatus`, `AdminOrder`, `AdminOrderSummary`.
@@ -333,9 +333,65 @@ CPF e telefone completos **nunca** são devolvidos pela API (só mascarados).
 | `POST /api/v1/admin/orders/{id}/shipments` | Cria etiqueta pendente na SuperFrete (pedido pago; remetente `SHIPPING_SENDER_*`) |
 | `POST /api/v1/admin/orders/{id}/shipments/{shipmentId}/sync` | Reconsulta status/rastreio |
 
-`attentionReason`: `payment_amount_mismatch`, `paid_after_expiry_without_stock`, `paid_after_cancellation`, `chargeback`, `refund_required`. Estornos e pagamento de etiquetas não são automatizados (ação financeira manual).
+`attentionReason`: `payment_amount_mismatch`, `paid_after_expiry_without_stock`, `paid_after_cancellation`, `chargeback`, `refund_required`. Estornos e pagamento de etiquetas não são automatizados (ação financeira manual). Desde a E6.1, transições, criação e sincronização de etiquetas também vão para a trilha de auditoria (`order.transition`, `order.shipment_create`, `order.shipment_sync`).
 
-## Modelo de dados (E2–E5 criados)
+### Painel administrativo (E6)
+**Plano de entregas** (uma por vez, cada uma testável e revisável):
+
+| Entrega | Escopo | Situação |
+|---|---|---|
+| **E6.1** | Fundação: guarda padrão das rotas admin, trilha de auditoria persistente e imutável, gestão de acesso da equipe (papéis, bloqueio), auditoria das rotas admin existentes | **Implementado e testado (2026-10-16)** |
+| E6.2 | Dashboard: pedidos, vendas, faturamento, ticket médio, status, fila de atenção, estoque baixo, mais vendidos; período e fuso `America/Sao_Paulo` | Planejado |
+| E6.3 | Catálogo: CRUD de produtos, variantes (SKU, preços, medidas), categorias, coleções, mídia por URL, publicação/arquivamento, concorrência otimista (`ETag`/`If-Match` → `412`) | Planejado |
+| E6.4 | Estoque: ajustes com motivo (`inventory_movements`), histórico, alertas de estoque baixo | Planejado |
+| E6.5 | Pedidos: busca e filtros por data/cliente/número, fila de atenção com resolução, notas internas, pagamentos e conciliação, exportação | Planejado |
+| E6.6 | Clientes (`customers:read`): lista/detalhe com dados mínimos e mascarados, pedidos, consentimentos | Planejado |
+| E6.7 | Marketing: cupons e campanhas completos (métricas de uso), banners por posição, newsletter (inscritos, exportação com consentimento) | Planejado |
+| E6.8 | Configurações comerciais da loja (versionadas e auditadas), relatórios de vendas/logística | Planejado |
+| E6.9 | Upload de mídia (`media:upload`), depende da escolha de armazenamento/hospedagem | Bloqueado por decisão de infraestrutura |
+
+A E7 (landing pages) reutiliza a guarda, a auditoria e as permissões `landing_pages:edit`/`landing_pages:publish` já definidas.
+
+#### Convenções de todas as rotas `/api/v1/admin/*` (E6.1)
+- Permissão verificada no servidor **antes** da validação de entrada: `401` sem sessão, `403` sem permissão (tentativa registrada em log com `actorId`, sem dados pessoais). Só depois vem `400` por campo.
+- `Cache-Control: no-store` em todas as respostas, inclusive erros.
+- Listas por cursor (`{ data, pageInfo }`, `limit` até 100), mais recentes primeiro.
+- Papéis e status são lidos do banco a cada requisição: conceder ou retirar acesso vale imediatamente, sem novo login.
+- Toda alteração efetiva gera uma entrada de auditoria **na mesma transação** (se a operação falhar, não há registro; se não houver mudança, também não). Exceção documentada: etiqueta da SuperFrete é auditada logo após ser criada no provedor, pois não há como desfazê-la junto com a transação.
+
+#### Gestão de acesso da equipe (permissão `users:manage`, somente `admin`)
+| Rota | Uso |
+|---|---|
+| `GET /api/v1/admin/roles` | `RoleCatalog`: papéis com rótulo, descrição e permissões; lista de permissões com descrição (para a tela de equipe) |
+| `GET /api/v1/admin/users?email=&role=&status=&limit&cursor` | `AdminUserList`. Sem `email`: somente contas com papel administrativo. Com `email` (exato, sem diferenciar maiúsculas): qualquer conta, para conceder acesso a um cliente |
+| `PUT /api/v1/admin/users/{id}/roles` | `{ roles: Role[] }` (conjunto completo, ≥ 1; repetições ignoradas; ordem canônica na resposta) → `AdminUser` |
+| `PATCH /api/v1/admin/users/{id}/status` | `{ status: "active" \| "disabled" }` → `AdminUser`. Bloquear impede o login e encerra todas as sessões da conta |
+
+`AdminUser`: `id`, `name`, `email`, `roles`, `permissions` (efetivas), `status`, `lastLoginAt`, `createdAt`. Nunca inclui hash de senha.
+
+Recusas (`409 CONFLICT`, motivo em `details[0].code`):
+- `cannot_modify_self`: ninguém altera os próprios papéis ou status (impede autoescalação e autobloqueio).
+- `last_admin`: a loja nunca fica sem administrador ativo. Alterações concorrentes são serializadas no banco (testado com duas contas admin rebaixando uma à outra simultaneamente: uma passa, a outra é recusada).
+- `403` quando quem altera não possui, **no momento da alteração**, todas as permissões dos papéis envolvidos; os papéis do operador são relidos dentro da transação.
+- `404` para conta inexistente.
+
+#### Trilha de auditoria (permissão `audit:read`, somente `admin`)
+`GET /api/v1/admin/audit-logs?action=&resourceType=&resourceId=&actorUserId=&from=&to=&limit&cursor` → `AuditLogList` (mais recentes primeiro; `from` inclusivo, `to` exclusivo, ISO 8601).
+
+`AuditLogEntry`: `id`, `occurredAt`, `actor { userId, name, roles }` (papéis no momento da ação; `name` é `null` se a conta não existir mais), `action`, `resource { type, id }`, `changes` (`{ campo: { from, to } }` ou `null`), `metadata` (contexto, ex.: número do pedido e observação), `requestId` (igual ao `X-Request-Id`, para cruzar com os logs).
+
+| `action` | `resource.type` | `changes` / `metadata` |
+|---|---|---|
+| `coupon.create`, `coupon.update` | `coupon` | campos criados (`null → valor`) ou alterados |
+| `campaign.create`, `campaign.update` | `campaign` | idem |
+| `order.transition` | `order` | `status` (e `attentionReason` quando muda); `metadata.orderNumber`, `metadata.note` |
+| `order.shipment_create`, `order.shipment_sync` | `order` | `metadata.shipmentId`, provedor e status |
+| `user.roles_update` | `user` | `roles` |
+| `user.status_update` | `user` | `status`; `metadata.sessionsRevoked` ao bloquear |
+
+Garantias: a tabela `admin_audit_logs` é **somente inserção** (gatilho no PostgreSQL recusa `UPDATE` e `DELETE`, inclusive para a própria aplicação); a entrada sobrevive à exclusão da conta que agiu; chaves sensíveis (`password`, `token`, `secret`, `document`, `cpf`, `phone`, `email`) aparecem como `[redacted]`; textos longos e estruturas grandes são truncados; colunas de controle (`updatedAt`, `createdAt`) não entram no `changes`. Não há rota de escrita nem de exclusão. Retenção e exportação: E9.
+
+## Modelo de dados (E2–E6 criados)
 Cada domínio terá suas tabelas Drizzle em `backend/src/modules/<domínio>/`. Convenções: UUID, `snake_case`, `created_at`/`updated_at` em `timestamptz`, valores em centavos (`*_minor`), e-mails/slugs em `citext` (extensão criada na migração `0000_init`).
 
 | Domínio | Entidades principais | Fase |
@@ -345,7 +401,7 @@ Cada domínio terá suas tabelas Drizzle em `backend/src/modules/<domínio>/`. C
 | Contas e clientes | `users`, `sessions` (hash do token), `password_reset_tokens`, `consents` **criados na E3** (migração `0002_accounts`); `addresses` **criado na E5** | E3 / E5 |
 | Carrinho e marketing | `carts` (visitante por hash de token ou conta), `cart_items` (quantidade 1–10, preço de referência), `coupons`, `campaigns`, `favorites`, `newsletter_subscriptions` + `newsletter_events` (dupla confirmação, trilha de consentimento) | **Criado na E4** (migração `0003_commerce`) |
 | Pedidos e pagamentos | `orders` (cópia de preços/endereço/frete/cupom, sequência `UR…`), `order_items`, `order_status_history`, `stock_reservations`, `coupon_redemptions`, `shipping_quotes`, `payments`, `shipments`, `webhook_events` (chave única por evento do provedor), `idempotency_keys`, `notifications` (fila) | **Criado na E5** (migração `0004_checkout`) |
-| Operação | `audit_log` (quem, o quê, antes/depois, sem dados pessoais desnecessários) | E6 |
+| Operação | `admin_audit_logs` (quem, papéis no momento, ação, recurso, campos alterados, `requestId`; somente inserção por gatilho; sem dados pessoais) | **Criado na E6.1** (migração `0005_admin`) |
 | Landing pages | `landing_pages` (slug, status `draft`/`scheduled`/`published`/`archived`, versão publicada), `landing_page_versions` (documento JSON imutável com `schemaVersion`, autor, data), `media_assets` | E7 |
 | CRM e WhatsApp | segmentos, interações, opt-ins de WhatsApp | E8 |
 
@@ -371,6 +427,8 @@ Landing pages: cada salvamento cria uma versão imutável; o documento JSON tem 
 | Pedidos | Lista, detalhe, pagar, sincronizar, cancelar | `/api/v1/orders`, `/orders/{id}`, `/orders/{id}/payment`, `/payment/sync`, `/cancel` | **Implementado e testado (E5)** |
 | Webhooks | Mercado Pago e SuperFrete | `POST /api/v1/webhooks/mercadopago`, `/webhooks/superfrete` | **Implementado e testado (E5)** com servidores locais; não exercitado com os provedores reais |
 | Admin pedidos | Lista, detalhe, transições, etiquetas | `/api/v1/admin/orders` (+ `/{id}`, `/transitions`, `/shipments`) | **Implementado e testado (E5)**; UI pendente (E6) |
+| Admin equipe | Papéis, contas da equipe, bloqueio | `/api/v1/admin/roles`, `/api/v1/admin/users` (+ `/{id}/roles`, `/{id}/status`) | **Implementado e testado (E6.1)**; UI pendente |
+| Admin auditoria | Trilha das operações administrativas | `GET /api/v1/admin/audit-logs` | **Implementado e testado (E6.1)**; UI pendente |
 | Landing pages | Listar e editar rascunhos | `GET/POST /api/v1/admin/landing-pages` | Proposta (E7) |
 | Landing pages | Publicação e versões | a definir | Proposta (E7) |
 

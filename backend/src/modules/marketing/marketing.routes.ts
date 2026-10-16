@@ -1,7 +1,8 @@
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import type { Db } from "../../db/client.js";
 import { errorResponseSchema } from "../../shared/errors.js";
-import { requirePermission } from "../auth/auth.plugin.js";
+import { auditActorFrom, diffChanges, recordAudit } from "../audit/audit.service.js";
+import { protectAdminScope } from "../auth/auth.plugin.js";
 import {
   activeCampaignsQuerySchema,
   activeCampaignsResponseSchema,
@@ -56,14 +57,11 @@ export const campaignRoutes: FastifyPluginAsyncZod<MarketingRoutesOptions> = asy
 };
 
 /**
- * Minimal administration of coupons and campaigns (permission `campaigns:manage`). Every change
- * is logged with the actor id; the persistent audit trail arrives with the admin APIs (E6).
+ * Administration of coupons and campaigns (permission `campaigns:manage`). Every change is written
+ * to the audit trail in the same transaction (E6) and logged with the actor id.
  */
 export const marketingAdminRoutes: FastifyPluginAsyncZod<MarketingRoutesOptions> = async (app, { db }) => {
-  app.addHook("preHandler", requirePermission("campaigns:manage"));
-  app.addHook("onSend", async (_request, reply) => {
-    reply.header("cache-control", "no-store");
-  });
+  protectAdminScope(app, "campaigns:manage");
 
   app.get(
     "/admin/coupons",
@@ -91,7 +89,16 @@ export const marketingAdminRoutes: FastifyPluginAsyncZod<MarketingRoutesOptions>
       },
     },
     async (request, reply) => {
-      const row = await createCoupon(db, request.body);
+      const row = await db.transaction(async (tx) => {
+        const created = await createCoupon(tx, request.body);
+        await recordAudit(tx, auditActorFrom(request), {
+          action: "coupon.create",
+          resourceType: "coupon",
+          resourceId: created.id,
+          changes: diffChanges(null, created),
+        });
+        return created;
+      });
       request.log.info({ actorId: request.principal!.userId, couponId: row.id, action: "coupon.create" }, "admin change");
       return reply.status(201).send(toAdminCoupon(row));
     },
@@ -110,7 +117,12 @@ export const marketingAdminRoutes: FastifyPluginAsyncZod<MarketingRoutesOptions>
       },
     },
     async (request) => {
-      const row = await updateCoupon(db, request.params.id, request.body);
+      const row = await db.transaction(async (tx) => {
+        const { before, after } = await updateCoupon(tx, request.params.id, request.body);
+        const changes = diffChanges(before, after);
+        if (changes) await recordAudit(tx, auditActorFrom(request), { action: "coupon.update", resourceType: "coupon", resourceId: after.id, changes });
+        return after;
+      });
       request.log.info(
         { actorId: request.principal!.userId, couponId: row.id, action: "coupon.update", fields: Object.keys(request.body) },
         "admin change",
@@ -145,7 +157,16 @@ export const marketingAdminRoutes: FastifyPluginAsyncZod<MarketingRoutesOptions>
       },
     },
     async (request, reply) => {
-      const row = await createCampaign(db, request.body);
+      const row = await db.transaction(async (tx) => {
+        const created = await createCampaign(tx, request.body);
+        await recordAudit(tx, auditActorFrom(request), {
+          action: "campaign.create",
+          resourceType: "campaign",
+          resourceId: created.id,
+          changes: diffChanges(null, created),
+        });
+        return created;
+      });
       request.log.info({ actorId: request.principal!.userId, campaignId: row.id, action: "campaign.create" }, "admin change");
       return reply.status(201).send(toAdminCampaign(row));
     },
@@ -164,7 +185,12 @@ export const marketingAdminRoutes: FastifyPluginAsyncZod<MarketingRoutesOptions>
       },
     },
     async (request) => {
-      const row = await updateCampaign(db, request.params.id, request.body);
+      const row = await db.transaction(async (tx) => {
+        const { before, after } = await updateCampaign(tx, request.params.id, request.body);
+        const changes = diffChanges(before, after);
+        if (changes) await recordAudit(tx, auditActorFrom(request), { action: "campaign.update", resourceType: "campaign", resourceId: after.id, changes });
+        return after;
+      });
       request.log.info(
         { actorId: request.principal!.userId, campaignId: row.id, action: "campaign.update", fields: Object.keys(request.body) },
         "admin change",

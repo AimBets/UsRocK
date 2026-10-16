@@ -28,7 +28,7 @@
 - [x] Regressão de vitrines investigada e recuperada: Fastify offline era a causa; seis produtos, detalhes e imagens foram revalidados de PostgreSQL até o build Next, sem mocks e sem alteração no backend.
 - [x] Frontend E5 integrado aos contratos OpenAPI oficiais e validado estaticamente, ao vivo e responsivamente com o backend E5 local.
 - [x] Backend E5 implementado e testado localmente (endereços, frete SuperFrete, checkout idempotente com reserva de estoque, pedidos, Mercado Pago Checkout Pro, webhooks assinados, e-mails por fila; 104 unitários + 92 de integração e verificação ao vivo em 2026-10-15; sandboxes reais não exercitados por falta de credenciais; sem commit até autorização).
-- [ ] Admin e CMS implementados.
+- [~] Admin e CMS: backend E6 planejado em 9 entregas; E6.1 (guarda admin, trilha de auditoria imutável, gestão de equipe e permissões) implementada e testada localmente em 2026-10-16 (114 unitários + 104 de integração, verificação ao vivo; sem commit até autorização). Dashboard, catálogo, estoque, clientes, configurações e UI do painel pendentes.
 - [ ] Editor de landing pages implementado.
 - [~] Integrações comerciais: Mercado Pago e SuperFrete implementados e testados contra servidores locais; teste nos sandboxes reais pendente de credenciais.
 - [ ] Segurança, QA, homologação e deploy concluídos.
@@ -36,7 +36,7 @@
 ## Próxima ação prioritária
 1. Revisar e aprovar o diff de integração E5 atual para commit/PR, sem novo merge em `main` antes da revisão humana.
 2. Obter credenciais de teste para validar os sandboxes reais do Mercado Pago e da SuperFrete; até lá, manter explícitos o frete fixture e o pagamento indisponível em desenvolvimento.
-3. Após autorização e contratos do backend, iniciar o painel administrativo E6 sem antecipar como prontas as integrações de sandbox.
+3. Revisar a E6.1 do backend (`claude/e6-admin`) e autorizar commit/PR; depois, E6.2 (dashboard) e E6.3 (catálogo). O Codex pode iniciar a estrutura do painel (menu por `permissions`, telas de equipe e auditoria) sobre os contratos E6.1.
 
 ## Registro das integrações
 | Funcionalidade | Frontend | Backend | Estado da integração |
@@ -51,10 +51,18 @@
 | Frete | Estimativa na sacola e seleção no checkout implementadas e testadas contra fixture E5 | Implementado e testado (E5: `/shipping/quotes`, SuperFrete + tabela simulada de dev) | Ponta a ponta local com fixture; sandbox SuperFrete real pendente |
 | Checkout e pedidos | Fluxo, retorno e área do cliente implementados e testados | Implementado e testado (E5: `/checkouts*`, `/orders*`, admin `/admin/orders*`) | Integrado e validado localmente; pagamento desativado no QA e tipos oficiais gerados |
 | Pagamento | Retorno, sincronização e novas tentativas implementados | Mercado Pago Checkout Pro e webhook assinados testados com servidor local | Sandbox Mercado Pago real pendente de credenciais |
+| Painel administrativo | Pendente | E6.1 implementada e testada (`/admin/roles`, `/admin/users*`, `/admin/audit-logs`; auditoria nas rotas admin de cupons, campanhas e pedidos) | Não integrado; UI do painel não iniciada |
 | Landing pages | Pendente | Pendente | Não iniciado |
 
 ## Alterações recentes
 - Bootstrap: estrutura inicial e documentos criados. Nenhuma integração funcional afirmada.
+
+## Registro factual — Backend E6.1 (fundação do painel administrativo), 2026-10-16 (Claude)
+- Remoto `AimBets/UsRocK` confirmado. A branch local `claude/e6-admin` estava em `510e3e6`, **sem** o backend E5; foi atualizada por fast-forward para `origin/main` `16db9ad` (PR #9, que contém `claude/e5-checkout` `a336bbd`). Linha de base antes de qualquer alteração: lint, typecheck, 104 unitários, 92 de integração e `openapi:check` passaram.
+- Auditoria do backend: admin existente se limitava a cupons/campanhas (E4) e pedidos (E5), com log estruturado e sem trilha persistente; 7 permissões definidas sem rota.
+- E6 dividida em 9 entregas (contratos, seção "Painel administrativo (E6)"). Implementada somente a E6.1: migração aditiva `0005_admin` (`admin_audit_logs` com gatilho que recusa `UPDATE`/`DELETE`), guarda padrão das rotas admin (permissão antes da validação, `no-store`, log de recusas), gestão de equipe (`users:manage`) com proteção contra autoalteração, perda do último admin e corrida entre alterações, consulta da trilha (`audit:read`) e auditoria transacional nas rotas admin de cupons, campanhas e pedidos.
+- Verificações reais: lint, typecheck, build, `openapi:check`, **114 unitários** e **104 de integração** com PostgreSQL; teste de mutação na trava de concorrência (detectado após reescrever o teste para forçar a intercalação); migração aplicada no banco de desenvolvimento; verificação ao vivo com servidor compilado. Dados de teste removidos.
+- `frontend/` não foi alterado. Nenhum commit, push ou merge realizado.
 
 ## Registro factual — Integração frontend/backend E5 definitiva, 2026-10-16 (Codex)
 - Branch `codex/e5-checkout` confirmada fora de `main`; backend E5 reunido localmente no merge `74f6416`. O trabalho desta rodada ficou restrito ao gerador/tipos/cliente do frontend e à documentação, sem edição de `backend/`.

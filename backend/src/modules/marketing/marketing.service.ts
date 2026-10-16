@@ -1,6 +1,6 @@
 import { and, desc, eq, gt, isNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
-import type { Db } from "../../db/client.js";
+import type { Db, DbExecutor } from "../../db/client.js";
 import { PG_CHECK_VIOLATION, PG_FOREIGN_KEY_VIOLATION, PG_UNIQUE_VIOLATION, pgError } from "../../shared/db-errors.js";
 import { errors, type ErrorDetail } from "../../shared/errors.js";
 import { brl } from "../../shared/money.js";
@@ -146,7 +146,7 @@ function couponPatch(body: UpdateCouponBody): Partial<CouponValues> {
   };
 }
 
-export async function createCoupon(db: Db, body: CreateCouponBody): Promise<CouponRow> {
+export async function createCoupon(db: DbExecutor, body: CreateCouponBody): Promise<CouponRow> {
   const values: CouponValues = {
     code: body.code,
     description: body.description,
@@ -172,14 +172,15 @@ export async function createCoupon(db: Db, body: CreateCouponBody): Promise<Coup
   }
 }
 
-export async function updateCoupon(db: Db, id: string, body: UpdateCouponBody): Promise<CouponRow> {
-  const [existing] = await db.select().from(coupons).where(eq(coupons.id, id)).limit(1);
+/** Locks the row; returns both versions so the caller can audit the difference. */
+export async function updateCoupon(db: DbExecutor, id: string, body: UpdateCouponBody): Promise<{ before: CouponRow; after: CouponRow }> {
+  const [existing] = await db.select().from(coupons).where(eq(coupons.id, id)).for("update");
   if (!existing) throw errors.notFound("Cupom não encontrado.");
   const patch = couponPatch(body);
   assertNoIssues(couponRuleIssues({ ...existing, ...patch }));
   try {
     const [row] = await db.update(coupons).set(patch).where(eq(coupons.id, id)).returning();
-    return row!;
+    return { before: existing, after: row! };
   } catch (error) {
     translateDbError(error, "code");
   }
@@ -245,7 +246,7 @@ function campaignPatch(body: UpdateCampaignBody): Partial<CampaignValues> {
   };
 }
 
-export async function createCampaign(db: Db, body: CreateCampaignBody): Promise<CampaignRow> {
+export async function createCampaign(db: DbExecutor, body: CreateCampaignBody): Promise<CampaignRow> {
   const values: CampaignValues = {
     slug: body.slug,
     placement: body.placement,
@@ -271,14 +272,15 @@ export async function createCampaign(db: Db, body: CreateCampaignBody): Promise<
   }
 }
 
-export async function updateCampaign(db: Db, id: string, body: UpdateCampaignBody): Promise<CampaignRow> {
-  const [existing] = await db.select().from(campaigns).where(eq(campaigns.id, id)).limit(1);
+/** Locks the row; returns both versions so the caller can audit the difference. */
+export async function updateCampaign(db: DbExecutor, id: string, body: UpdateCampaignBody): Promise<{ before: CampaignRow; after: CampaignRow }> {
+  const [existing] = await db.select().from(campaigns).where(eq(campaigns.id, id)).for("update");
   if (!existing) throw errors.notFound("Campanha não encontrada.");
   const patch = campaignPatch(body);
   assertNoIssues(campaignRuleIssues({ ...existing, ...patch }));
   try {
     const [row] = await db.update(campaigns).set(patch).where(eq(campaigns.id, id)).returning();
-    return row!;
+    return { before: existing, after: row! };
   } catch (error) {
     translateDbError(error, "slug");
   }
